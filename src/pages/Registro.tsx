@@ -1,16 +1,30 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleButton } from "../components/GoogleButton";
 import { HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 export function Registro() {
-  const { registrar } = useAuth();
+  const { registrar, registrarConGoogle } = useAuth();
   const navigate = useNavigate();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  const onGoogle = useCallback(
+    async (idToken: string) => {
+      setError(null);
+      try {
+        await registrarConGoogle(idToken);
+        navigate("/cuenta", { replace: true });
+      } catch (e: unknown) {
+        setError(e instanceof HttpError ? e.message : "No se pudo crear la cuenta con Google");
+      }
+    },
+    [navigate, registrarConGoogle],
+  );
 
   async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -75,6 +89,14 @@ export function Registro() {
           {enviando ? "Creando…" : "Crear cuenta"}
         </button>
       </form>
+
+      <div className="flex items-center gap-3 text-xs text-mute">
+        <span className="h-px flex-1 bg-line" />
+        o
+        <span className="h-px flex-1 bg-line" />
+      </div>
+      <GoogleButton onCredential={(token) => void onGoogle(token)} />
+
       <p className="text-center text-sm text-mute">
         ¿Ya tienes cuenta?{" "}
         <Link to="/entrar" className="text-gold">

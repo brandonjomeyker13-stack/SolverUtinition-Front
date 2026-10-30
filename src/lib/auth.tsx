@@ -8,6 +8,7 @@ type AuthCtx = {
   entrar: (email: string, password: string) => Promise<void>;
   registrar: (nombre: string, email: string, password: string) => Promise<void>;
   entrarConGoogle: (idToken: string) => Promise<void>;
+  registrarConGoogle: (idToken: string) => Promise<void>;
   recargar: () => Promise<void>;
   salir: () => Promise<void>;
 };
@@ -60,6 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       async entrarConGoogle(idToken) {
         const data = await api<TokenResponse>("/auth/google", {
+          method: "POST",
+          body: JSON.stringify({ id_token: idToken }),
+          skipAuth: true,
+        });
+        await guardarSesion(data);
+      },
+      async registrarConGoogle(idToken) {
+        const data = await api<TokenResponse>("/auth/google/registro", {
           method: "POST",
           body: JSON.stringify({ id_token: idToken }),
           skipAuth: true,

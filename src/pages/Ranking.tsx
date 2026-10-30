@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, HttpError } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import type { RankingFila, Ritmo } from "../lib/types";
 
 const RITMOS: { id: Ritmo; label: string }[] = [
@@ -9,6 +11,7 @@ const RITMOS: { id: Ritmo; label: string }[] = [
 ];
 
 export function Ranking() {
+  const { usuario, cargando: cargandoSesion } = useAuth();
   const [ritmo, setRitmo] = useState<Ritmo>("rapid");
   const [filas, setFilas] = useState<RankingFila[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +40,20 @@ export function Ranking() {
           suman igual.
         </p>
       </section>
+
+      {!cargandoSesion && !usuario ? (
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold/30 bg-panel px-5 py-4">
+          <p className="text-cream">Crea tu cuenta o inicia sesión para seguir el ranking.</p>
+          <div className="flex gap-2">
+            <Link to="/entrar" className="rounded-full px-4 py-2 text-sm text-mute hover:text-cream">
+              Iniciar sesión
+            </Link>
+            <Link to="/registro" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink">
+              Crear cuenta
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <div className="flex gap-2">
         {RITMOS.map((r) => (
