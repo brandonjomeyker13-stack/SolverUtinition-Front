@@ -16,6 +16,7 @@ export function Cuenta() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     const chesscom = params.get("chesscom");
@@ -30,14 +31,21 @@ export function Cuenta() {
     }
   }, [params, recargar, setParams]);
 
-  async function conectar() {
+  async function vincular(ev: React.FormEvent) {
+    ev.preventDefault();
     setError(null);
     setOcupado(true);
     try {
-      const data = await api<{ url: string }>("/chesscom/conectar");
-      window.location.assign(data.url);
+      await api("/chesscom/vincular", {
+        method: "POST",
+        body: JSON.stringify({ username }),
+      });
+      await recargar();
+      setAviso("Chess.com quedó vinculado. Solo cuentan las partidas de ahora en adelante.");
+      setUsername("");
     } catch (e: unknown) {
-      setError(e instanceof HttpError ? e.message : "No se pudo iniciar Chess.com");
+      setError(e instanceof HttpError ? e.message : "No se pudo vincular Chess.com");
+    } finally {
       setOcupado(false);
     }
   }
@@ -138,17 +146,26 @@ export function Cuenta() {
         ) : (
           <div className="mt-3 space-y-4">
             <p className="text-sm text-mute">
-              Conecta tu cuenta para que las partidas nuevas contra alguien de la
-              comunidad entren al ranking.
+              Escribe tu username de Chess.com. Comprobamos que exista y, desde este
+              momento, las partidas nuevas contra alguien de la comunidad entran al ranking.
             </p>
-            <button
-              type="button"
-              disabled={ocupado}
-              onClick={() => void conectar()}
-              className="rounded-xl bg-gold px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
-            >
-              Conectar Chess.com
-            </button>
+            <form onSubmit={(ev) => void vincular(ev)} className="flex flex-wrap gap-3">
+              <input
+                required
+                minLength={2}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username"
+                className="min-w-48 flex-1 rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
+              />
+              <button
+                type="submit"
+                disabled={ocupado}
+                className="rounded-xl bg-gold px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+              >
+                Vincular
+              </button>
+            </form>
           </div>
         )}
       </section>
