@@ -34,11 +34,6 @@ export function Ranking() {
       <section className="max-w-2xl">
         <p className="mb-2 text-xs uppercase tracking-[0.2em] text-gold-dim">Comunidad</p>
         <h1 className="font-display text-3xl leading-tight text-cream sm:text-4xl">Ranking interno</h1>
-        <p className="mt-3 text-mute">
-          Todos empiezan en 1000. Solo cuentan partidas estándar de bala, blitz y rápida
-          jugadas en Chess.com después de que ambos ya estén vinculados. Rated y no rated
-          suman igual.
-        </p>
       </section>
 
       {!cargandoSesion && !usuario ? (
