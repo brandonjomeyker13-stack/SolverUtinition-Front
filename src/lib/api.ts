@@ -1,6 +1,6 @@
 import type { ApiError } from "./types";
 
-const API = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API = (import.meta.env.VITE_API_URL || "https://solverutinition.onrender.com").replace(/\/$/, "");
 
 const TOKEN_KEY = "access_token";
 

@@ -7,6 +7,8 @@ type Props = {
 
 export function GoogleButton({ onCredential }: Props) {
   const caja = useRef<HTMLDivElement>(null);
+  const alRecibir = useRef(onCredential);
+  alRecibir.current = onCredential;
   const clientId = GOOGLE_CLIENT_ID;
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export function GoogleButton({ onCredential }: Props) {
       caja.current.innerHTML = "";
       window.google.accounts.id.initialize({
         client_id: clientId,
-        callback: (res) => onCredential(res.credential),
+        callback: (res) => alRecibir.current(res.credential),
       });
       window.google.accounts.id.renderButton(caja.current, {
         theme: "filled_black",
@@ -39,7 +41,7 @@ export function GoogleButton({ onCredential }: Props) {
     script.async = true;
     script.onload = render;
     document.head.appendChild(script);
-  }, [clientId, onCredential]);
+  }, [clientId]);
 
   if (!clientId) {
     return (
