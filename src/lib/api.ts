@@ -63,7 +63,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     ...options,
     headers,
     credentials: "include",
-    signal: options.signal ?? AbortSignal.timeout(8000),
+    signal: options.signal ?? AbortSignal.timeout(45000),
   });
 
   if (res.status === 401 && !options.skipAuth && !path.startsWith("/auth/")) {
