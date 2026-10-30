@@ -33,7 +33,7 @@ export function Ranking() {
     <div className="space-y-8">
       <section className="max-w-2xl">
         <p className="mb-2 text-xs uppercase tracking-[0.2em] text-gold-dim">Comunidad</p>
-        <h1 className="font-display text-4xl leading-tight text-cream">Ranking interno</h1>
+        <h1 className="font-display text-3xl leading-tight text-cream sm:text-4xl">Ranking interno</h1>
         <p className="mt-3 text-mute">
           Todos empiezan en 1000. Solo cuentan partidas estándar de bala, blitz y rápida
           jugadas en Chess.com después de que ambos ya estén vinculados. Rated y no rated
@@ -70,7 +70,7 @@ export function Ranking() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-panel">
         {cargando ? (
           <p className="px-5 py-10 text-mute">Cargando ranking…</p>
         ) : error ? (
@@ -84,24 +84,24 @@ export function Ranking() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line text-mute">
               <tr>
-                <th className="px-5 py-3 font-medium">#</th>
-                <th className="px-5 py-3 font-medium">Jugador</th>
-                <th className="px-5 py-3 font-medium">Elo</th>
-                <th className="px-5 py-3 font-medium">Partidas</th>
+                <th className="px-3 py-3 font-medium sm:px-5">#</th>
+                <th className="px-3 py-3 font-medium sm:px-5">Jugador</th>
+                <th className="px-3 py-3 font-medium sm:px-5">Elo</th>
+                <th className="px-3 py-3 font-medium sm:px-5">Partidas</th>
               </tr>
             </thead>
             <tbody>
               {filas.map((fila) => (
                 <tr key={fila.usuario_id} className="border-b border-line/60 last:border-0">
-                  <td className="px-5 py-3 text-gold">{fila.posicion}</td>
-                  <td className="px-5 py-3">
-                    <div className="font-medium">{fila.nombre}</div>
+                  <td className="px-3 py-3 text-gold sm:px-5">{fila.posicion}</td>
+                  <td className="px-3 py-3 sm:px-5">
+                    <div className="font-medium break-words">{fila.nombre}</div>
                     {fila.chesscom_username ? (
-                      <div className="text-xs text-mute">{fila.chesscom_username}</div>
+                      <div className="break-all text-xs text-mute">{fila.chesscom_username}</div>
                     ) : null}
                   </td>
-                  <td className="px-5 py-3 font-display text-lg">{fila.elo}</td>
-                  <td className="px-5 py-3 text-mute">{fila.partidas_jugadas}</td>
+                  <td className="px-3 py-3 font-display text-lg sm:px-5">{fila.elo}</td>
+                  <td className="px-3 py-3 text-mute sm:px-5">{fila.partidas_jugadas}</td>
                 </tr>
               ))}
             </tbody>

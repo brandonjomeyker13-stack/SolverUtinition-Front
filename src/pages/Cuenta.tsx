@@ -88,8 +88,8 @@ export function Cuenta() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl">{usuario.nombre}</h1>
-        <p className="mt-1 text-sm text-mute">{usuario.email}</p>
+        <h1 className="font-display text-3xl break-words">{usuario.nombre}</h1>
+        <p className="mt-1 break-all text-sm text-mute">{usuario.email}</p>
       </div>
 
       {aviso ? (
@@ -149,14 +149,14 @@ export function Cuenta() {
               Escribe tu username de Chess.com. Comprobamos que exista y, desde este
               momento, las partidas nuevas contra alguien de la comunidad entran al ranking.
             </p>
-            <form onSubmit={(ev) => void vincular(ev)} className="flex flex-wrap gap-3">
+            <form onSubmit={(ev) => void vincular(ev)} className="flex flex-col gap-3 sm:flex-row">
               <input
                 required
                 minLength={2}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="username"
-                className="min-w-48 flex-1 rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
+                className="min-w-0 flex-1 rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
               />
               <button
                 type="submit"

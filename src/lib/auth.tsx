@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { api, setToken } from "./api";
+import { api, getRefreshToken, guardarTokens, limpiarSesion } from "./api";
 import type { Perfil, TokenResponse } from "./types";
 
 type AuthCtx = {
@@ -25,16 +25,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUsuario(perfil);
     } catch {
       setUsuario(null);
-      setToken(null);
+      limpiarSesion();
     }
   }
 
   useEffect(() => {
     recargar().finally(() => setCargando(false));
+    const alExpirar = () => setUsuario(null);
+    window.addEventListener("sesion-expirada", alExpirar);
+    return () => window.removeEventListener("sesion-expirada", alExpirar);
   }, []);
 
   async function guardarSesion(data: TokenResponse) {
-    setToken(data.access_token);
+    guardarTokens(data.access_token, data.refresh_token);
     setUsuario(data.usuario);
   }
 
@@ -77,9 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       async salir() {
         try {
-          await api("/auth/logout", { method: "POST" });
+          await api("/auth/logout", {
+            method: "POST",
+            body: JSON.stringify({ refresh_token: getRefreshToken() }),
+          });
         } finally {
-          setToken(null);
+          limpiarSesion();
           setUsuario(null);
         }
       },

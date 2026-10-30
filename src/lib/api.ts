@@ -3,6 +3,7 @@ import type { ApiError } from "./types";
 const API = (import.meta.env.VITE_API_URL || "https://solverutinition.onrender.com").replace(/\/$/, "");
 
 const TOKEN_KEY = "access_token";
+const REFRESH_KEY = "refresh_token";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -11,6 +12,25 @@ export function getToken(): string | null {
 export function setToken(token: string | null): void {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+export function setRefreshToken(token: string | null): void {
+  if (token) localStorage.setItem(REFRESH_KEY, token);
+  else localStorage.removeItem(REFRESH_KEY);
+}
+
+export function guardarTokens(access: string, refresh: string): void {
+  setToken(access);
+  setRefreshToken(refresh);
+}
+
+export function limpiarSesion(): void {
+  setToken(null);
+  setRefreshToken(null);
 }
 
 export class HttpError extends Error {
@@ -33,21 +53,44 @@ async function parseError(res: Response): Promise<HttpError> {
   }
 }
 
-async function refreshAccess(): Promise<boolean> {
+let renovacion: Promise<boolean> | null = null;
+
+async function renovar(): Promise<boolean> {
+  const refresh = getRefreshToken();
+  if (!refresh) return false;
   const res = await fetch(`${API}/api/v1/auth/refresh`, {
     method: "POST",
     credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refresh }),
   });
   if (!res.ok) {
-    setToken(null);
+    limpiarSesion();
     return false;
   }
-  const data = (await res.json()) as { access_token: string };
-  setToken(data.access_token);
+  const data = (await res.json()) as { access_token: string; refresh_token: string };
+  guardarTokens(data.access_token, data.refresh_token);
   return true;
 }
 
-type Options = RequestInit & { skipAuth?: boolean };
+export function refreshAccess(): Promise<boolean> {
+  if (!renovacion) {
+    renovacion = renovar().finally(() => {
+      renovacion = null;
+    });
+  }
+  return renovacion;
+}
+
+type Options = RequestInit & { skipAuth?: boolean; yaReintento?: boolean };
+
+function puedeRenovar(path: string): boolean {
+  return !path.startsWith("/auth/login")
+    && !path.startsWith("/auth/registro")
+    && !path.startsWith("/auth/google")
+    && !path.startsWith("/auth/refresh")
+    && !path.startsWith("/auth/logout");
+}
 
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const headers = new Headers(options.headers);
@@ -66,9 +109,10 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     signal: options.signal ?? AbortSignal.timeout(45000),
   });
 
-  if (res.status === 401 && !options.skipAuth && !path.startsWith("/auth/")) {
+  if (res.status === 401 && !options.skipAuth && !options.yaReintento && puedeRenovar(path)) {
     const ok = await refreshAccess();
-    if (ok) return api<T>(path, { ...options, skipAuth: false });
+    if (ok) return api<T>(path, { ...options, yaReintento: true });
+    window.dispatchEvent(new Event("sesion-expirada"));
   }
 
   if (res.status === 204) return undefined as T;

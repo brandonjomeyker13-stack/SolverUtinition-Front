@@ -15,32 +15,39 @@ export function GoogleButton({ onCredential }: Props) {
     if (!clientId || !caja.current) return;
 
     const scriptId = "gis-script";
+    let iniciado = false;
     const render = () => {
       if (!window.google || !caja.current) return;
+      const ancho = Math.max(200, Math.min(320, Math.floor(caja.current.clientWidth)));
+      if (!iniciado) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (res) => alRecibir.current(res.credential),
+        });
+        iniciado = true;
+      }
       caja.current.innerHTML = "";
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (res) => alRecibir.current(res.credential),
-      });
       window.google.accounts.id.renderButton(caja.current, {
         theme: "filled_black",
         size: "large",
         text: "signin_with",
-        width: 320,
+        width: ancho,
         locale: "es",
       });
     };
 
     if (document.getElementById(scriptId)) {
       render();
-      return;
+    } else {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onload = render;
+      document.head.appendChild(script);
     }
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = render;
-    document.head.appendChild(script);
+    window.addEventListener("resize", render);
+    return () => window.removeEventListener("resize", render);
   }, [clientId]);
 
   if (!clientId) {
@@ -51,5 +58,5 @@ export function GoogleButton({ onCredential }: Props) {
     );
   }
 
-  return <div ref={caja} className="flex justify-center" />;
+  return <div ref={caja} className="flex w-full justify-center overflow-hidden" />;
 }

@@ -2,7 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 const link =
-  "rounded-full px-3 py-1.5 text-sm text-mute transition hover:text-cream";
+  "whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-mute transition hover:text-cream";
 const activo = "bg-raised text-cream";
 
 export function Layout() {
@@ -11,11 +11,11 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_80%_-10%,#243026_0%,transparent_55%),linear-gradient(#0b0f0c,#0b0f0c)]">
       <header className="sticky top-0 z-10 border-b border-line/70 bg-ink/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
-          <NavLink to="/" className="shrink-0 font-display text-xl tracking-tight text-cream">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5 md:py-4">
+          <NavLink to="/" className="font-display text-xl tracking-tight text-cream">
             Solver<span className="text-gold">Unition</span>
           </NavLink>
-          <nav className="flex shrink-0 items-center gap-1">
+          <nav className="flex flex-wrap items-center gap-1">
             <NavLink to="/" end className={({ isActive }) => `${link} ${isActive ? activo : ""}`}>
               Ranking
             </NavLink>
@@ -51,7 +51,7 @@ export function Layout() {
                 </NavLink>
                 <NavLink
                   to="/registro"
-                  className="ml-1 rounded-full bg-gold px-3 py-1.5 text-sm font-medium text-ink"
+                  className="whitespace-nowrap rounded-full bg-gold px-3 py-1.5 text-sm font-medium text-ink"
                 >
                   Crear cuenta
                 </NavLink>
@@ -60,7 +60,7 @@ export function Layout() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-5 py-10">
+      <main className="mx-auto max-w-5xl px-4 py-8 md:px-5 md:py-10">
         <Outlet />
       </main>
     </div>

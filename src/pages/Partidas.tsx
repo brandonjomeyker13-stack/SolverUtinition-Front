@@ -24,6 +24,7 @@ export function Partidas() {
     api<Partida[]>("/partidas/mias")
       .then(setFilas)
       .catch((e: unknown) => {
+        if (e instanceof HttpError && e.status === 401) return;
         setError(e instanceof HttpError ? e.message : "No se pudieron cargar las partidas");
       })
       .finally(() => setCargando(false));
@@ -40,59 +41,103 @@ export function Partidas() {
 
       <div className="overflow-hidden rounded-2xl border border-line bg-panel">
         {cargando ? (
-          <p className="px-5 py-10 text-mute">Cargando…</p>
+          <p className="px-4 py-10 text-mute sm:px-5">Cargando…</p>
         ) : error ? (
-          <p className="px-5 py-10 text-bad">{error}</p>
+          <p className="px-4 py-10 text-bad sm:px-5">{error}</p>
         ) : filas.length === 0 ? (
-          <p className="px-5 py-10 text-mute">
+          <p className="px-4 py-10 text-mute sm:px-5">
             Aún no hay partidas. Juega en Chess.com con alguien de la comunidad y pulsa
             “Buscar partidas nuevas” en tu cuenta.
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line text-mute">
-              <tr>
-                <th className="px-5 py-3 font-medium">Fecha</th>
-                <th className="px-5 py-3 font-medium">Color</th>
-                <th className="px-5 py-3 font-medium">Ritmo</th>
-                <th className="px-5 py-3 font-medium">Resultado</th>
-                <th className="px-5 py-3 font-medium">Elo</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <ul className="divide-y divide-line/60 md:hidden">
               {filas.map((p) => {
                 const soyBlanca = usuario?.id === p.blanca_id;
                 const miDelta = soyBlanca ? p.delta_blanca : p.delta_negra;
                 const miElo = soyBlanca ? p.elo_blanca_antes : p.elo_negra_antes;
                 return (
-                  <tr key={p.id} className="border-b border-line/60 last:border-0">
-                    <td className="px-5 py-3 text-mute">
-                      {new Date(p.terminada_en).toLocaleString("es")}
-                    </td>
-                    <td className="px-5 py-3">{soyBlanca ? "Blancas" : "Negras"}</td>
-                    <td className="px-5 py-3 text-mute">{RITMO[p.ritmo]}</td>
-                    <td className="px-5 py-3">{p.resultado}</td>
-                    <td className="px-5 py-3">
-                      <span className={miDelta >= 0 ? "text-good" : "text-bad"}>
-                        {delta(miDelta)}
-                      </span>
-                      <span className="ml-2 text-mute">desde {miElo}</span>
+                  <li key={p.id} className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm">
+                          {soyBlanca ? "Blancas" : "Negras"} · {RITMO[p.ritmo]}
+                        </p>
+                        <p className="mt-1 text-xs text-mute">
+                          {new Date(p.terminada_en).toLocaleString("es")}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-right">
+                        <span className={miDelta >= 0 ? "text-good" : "text-bad"}>
+                          {delta(miDelta)}
+                        </span>
+                        <span className="mt-1 block text-xs text-mute">desde {miElo}</span>
+                      </p>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="text-mute">{p.resultado}</span>
                       {p.url ? (
                         <a
                           href={p.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="ml-3 text-gold hover:underline"
+                          className="text-gold hover:underline"
                         >
-                          ver
+                          ver en Chess.com
                         </a>
                       ) : null}
-                    </td>
-                  </tr>
+                    </div>
+                  </li>
                 );
               })}
-            </tbody>
-          </table>
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-line text-mute">
+                  <tr>
+                    <th className="px-5 py-3 font-medium">Fecha</th>
+                    <th className="px-5 py-3 font-medium">Color</th>
+                    <th className="px-5 py-3 font-medium">Ritmo</th>
+                    <th className="px-5 py-3 font-medium">Resultado</th>
+                    <th className="px-5 py-3 font-medium">Elo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.map((p) => {
+                    const soyBlanca = usuario?.id === p.blanca_id;
+                    const miDelta = soyBlanca ? p.delta_blanca : p.delta_negra;
+                    const miElo = soyBlanca ? p.elo_blanca_antes : p.elo_negra_antes;
+                    return (
+                      <tr key={p.id} className="border-b border-line/60 last:border-0">
+                        <td className="px-5 py-3 text-mute">
+                          {new Date(p.terminada_en).toLocaleString("es")}
+                        </td>
+                        <td className="px-5 py-3">{soyBlanca ? "Blancas" : "Negras"}</td>
+                        <td className="px-5 py-3 text-mute">{RITMO[p.ritmo]}</td>
+                        <td className="px-5 py-3">{p.resultado}</td>
+                        <td className="px-5 py-3">
+                          <span className={miDelta >= 0 ? "text-good" : "text-bad"}>
+                            {delta(miDelta)}
+                          </span>
+                          <span className="ml-2 text-mute">desde {miElo}</span>
+                          {p.url ? (
+                            <a
+                              href={p.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ml-3 text-gold hover:underline"
+                            >
+                              ver
+                            </a>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
