@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { GOOGLE_CLIENT_ID } from "../lib/google";
 
 type Props = {
   onCredential: (idToken: string) => void;
@@ -6,7 +7,7 @@ type Props = {
 
 export function GoogleButton({ onCredential }: Props) {
   const caja = useRef<HTMLDivElement>(null);
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const clientId = GOOGLE_CLIENT_ID;
 
   useEffect(() => {
     if (!clientId || !caja.current) return;
