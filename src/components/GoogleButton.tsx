@@ -28,7 +28,7 @@ export function GoogleButton({ onCredential }: Props) {
       }
       caja.current.innerHTML = "";
       window.google.accounts.id.renderButton(caja.current, {
-        theme: "filled_black",
+        theme: "outline",
         size: "large",
         text: "signin_with",
         width: ancho,

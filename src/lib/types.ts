@@ -18,6 +18,11 @@ export type Perfil = {
     username_visible: string;
     vinculada_en: string;
   } | null;
+  lichess: {
+    username: string;
+    username_visible: string;
+    vinculada_en: string;
+  } | null;
   ratings: Rating[];
 };
 
@@ -33,6 +38,7 @@ export type RankingFila = {
   usuario_id: number;
   nombre: string;
   chesscom_username: string | null;
+  lichess_username: string | null;
   ritmo: Ritmo;
   elo: number;
   partidas_jugadas: number;

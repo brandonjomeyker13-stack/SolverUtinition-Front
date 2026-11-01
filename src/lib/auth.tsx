@@ -80,10 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       async salir() {
         try {
-          await api("/auth/logout", {
-            method: "POST",
-            body: JSON.stringify({ refresh_token: getRefreshToken() }),
-          });
+          const refresh = getRefreshToken();
+          if (refresh) {
+            await api("/auth/logout", {
+              method: "POST",
+              body: JSON.stringify({ refresh_token: refresh }),
+            });
+          }
+        } catch {
+          // Si el servidor no responde, igual cerramos la sesión en este navegador.
         } finally {
           limpiarSesion();
           setUsuario(null);

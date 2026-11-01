@@ -3,16 +3,18 @@
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, serif;
-  --color-ink: #0b0f0c;
-  --color-panel: #131a15;
-  --color-raised: #1a231c;
-  --color-line: #2c382f;
-  --color-gold: #d4b45a;
-  --color-gold-dim: #8a7330;
-  --color-cream: #f3ead6;
-  --color-mute: #9aa694;
-  --color-good: #7dcea0;
-  --color-bad: #e07a7a;
+  --color-canvas: #f4f7f4;
+  --color-panel: #ffffff;
+  --color-raised: #e7f2eb;
+  --color-line: #d3e2d8;
+  --color-ink: #173028;
+  --color-cream: #173028;
+  --color-mute: #3f5349;
+  --color-accent: #1b7a4b;
+  --color-gold: #8a5a12;
+  --color-gold-dim: #6d4a10;
+  --color-good: #157a42;
+  --color-bad: #b42318;
 }
 
 html,
@@ -21,13 +23,57 @@ body,
   min-height: 100%;
 }
 
+html {
+  color-scheme: light;
+}
+
 body {
   margin: 0;
-  background: var(--color-ink);
-  color: var(--color-cream);
+  background:
+    radial-gradient(900px 420px at 100% -10%, #d9f0e2 0%, transparent 55%),
+    var(--color-canvas);
+  color: var(--color-ink);
   font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
 ::selection {
-  background: #d4b45a55;
+  background: #1b7a4b33;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl border border-line bg-panel shadow-[0_1px_2px_rgb(23_48_40/0.04),0_12px_32px_rgb(23_48_40/0.05)];
+  }
+
+  .field {
+    @apply mt-1.5 min-h-12 w-full rounded-2xl border border-line bg-white px-3.5 text-base text-ink;
+  }
+
+  .btn {
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-white disabled:opacity-60;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-4 text-sm font-medium text-ink disabled:opacity-60;
+  }
 }

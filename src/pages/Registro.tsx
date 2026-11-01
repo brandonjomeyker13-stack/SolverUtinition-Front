@@ -45,47 +45,46 @@ export function Registro() {
       <div>
         <h1 className="font-display text-3xl">Crear cuenta</h1>
         <p className="mt-2 text-sm text-mute">
-          Primero la cuenta de la comunidad. Después conectas Chess.com.
+          Primero la cuenta de la comunidad. Después conectas Lichess.
         </p>
       </div>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-line bg-panel p-6">
-        <label className="block text-sm">
+      <form onSubmit={onSubmit} className="card space-y-4 p-4 sm:p-6">
+        <label className="block text-sm font-medium">
           Nombre
           <input
             required
             minLength={2}
+            autoComplete="name"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
+            className="field"
           />
         </label>
-        <label className="block text-sm">
+        <label className="block text-sm font-medium">
           Correo
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
+            className="field"
           />
         </label>
-        <label className="block text-sm">
+        <label className="block text-sm font-medium">
           Contraseña
           <input
             type="password"
             required
             minLength={8}
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-line bg-ink px-3 py-2 text-cream outline-none focus:border-gold"
+            className="field"
           />
         </label>
         {error ? <p className="text-sm text-bad">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={enviando}
-          className="w-full rounded-xl bg-gold py-2.5 text-sm font-medium text-ink disabled:opacity-60"
-        >
+        <button type="submit" disabled={enviando} className="btn w-full">
           {enviando ? "Creando…" : "Crear cuenta"}
         </button>
       </form>
@@ -99,7 +98,7 @@ export function Registro() {
 
       <p className="text-center text-sm text-mute">
         ¿Ya tienes cuenta?{" "}
-        <Link to="/entrar" className="text-gold">
+        <Link to="/entrar" className="font-medium text-accent">
           Entrar
         </Link>
       </p>

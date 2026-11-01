@@ -14,6 +14,10 @@ function delta(n: number) {
   return String(n);
 }
 
+function verEn(plataforma: string) {
+  return plataforma === "lichess" ? "ver en Lichess" : "ver en Chess.com";
+}
+
 export function Partidas() {
   const { usuario } = useAuth();
   const [filas, setFilas] = useState<Partida[]>([]);
@@ -39,14 +43,14 @@ export function Partidas() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+      <div className="card overflow-hidden">
         {cargando ? (
           <p className="px-4 py-10 text-mute sm:px-5">Cargando…</p>
         ) : error ? (
           <p className="px-4 py-10 text-bad sm:px-5">{error}</p>
         ) : filas.length === 0 ? (
           <p className="px-4 py-10 text-mute sm:px-5">
-            Aún no hay partidas. Juega en Chess.com con alguien de la comunidad y pulsa
+            Aún no hay partidas. Juega en Lichess con alguien de la comunidad y pulsa
             “Buscar partidas nuevas” en tu cuenta.
           </p>
         ) : (
@@ -81,9 +85,9 @@ export function Partidas() {
                           href={p.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-gold hover:underline"
+                          className="inline-flex min-h-11 items-center font-medium text-accent underline"
                         >
-                          ver en Chess.com
+                          {verEn(p.plataforma)}
                         </a>
                       ) : null}
                     </div>
@@ -125,9 +129,9 @@ export function Partidas() {
                               href={p.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="ml-3 text-gold hover:underline"
+                              className="ml-3 inline-flex min-h-11 items-center font-medium text-accent underline"
                             >
-                              ver
+                              {verEn(p.plataforma)}
                             </a>
                           ) : null}
                         </td>
