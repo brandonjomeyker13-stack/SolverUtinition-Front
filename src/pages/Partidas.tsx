@@ -23,15 +23,38 @@ export function Partidas() {
   const [filas, setFilas] = useState<Partida[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [buscando, setBuscando] = useState(true);
 
   useEffect(() => {
+    let vivo = true;
+    let listaNueva = false;
+
     api<Partida[]>("/partidas/mias")
-      .then(setFilas)
+      .then((datos) => {
+        if (vivo && !listaNueva) setFilas(datos);
+      })
       .catch((e: unknown) => {
-        if (e instanceof HttpError && e.status === 401) return;
+        if (!vivo || (e instanceof HttpError && e.status === 401)) return;
         setError(e instanceof HttpError ? e.message : "No se pudieron cargar las partidas");
       })
-      .finally(() => setCargando(false));
+      .finally(() => {
+        if (vivo) setCargando(false);
+      });
+
+    api("/partidas/sincronizar-ahora", { method: "POST" })
+      .then(() => api<Partida[]>("/partidas/mias"))
+      .then((datos) => {
+        listaNueva = true;
+        if (vivo) setFilas(datos);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (vivo) setBuscando(false);
+      });
+
+    return () => {
+      vivo = false;
+    };
   }, []);
 
   return (
@@ -39,7 +62,9 @@ export function Partidas() {
       <div>
         <h1 className="font-display text-3xl">Tus partidas</h1>
         <p className="mt-2 text-sm text-mute">
-          Solo las que ya se anotaron en el ranking de la comunidad.
+          {buscando
+            ? "Buscando en Lichess las partidas nuevas de la comunidad…"
+            : "Solo las que ya se anotaron en el ranking de la comunidad."}
         </p>
       </div>
 
@@ -50,8 +75,9 @@ export function Partidas() {
           <p className="px-4 py-10 text-bad sm:px-5">{error}</p>
         ) : filas.length === 0 ? (
           <p className="px-4 py-10 text-mute sm:px-5">
-            Aún no hay partidas. Juega en Lichess con alguien de la comunidad y pulsa
-            “Buscar partidas nuevas” en tu cuenta.
+            {buscando
+              ? "Buscando en Lichess…"
+              : "Aún no hay partidas. Cuenta si ambos ya tenían Lichess conectado antes de que terminara, y si fue bala, blitz o rápida estándar."}
           </p>
         ) : (
           <>

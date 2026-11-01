@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -16,18 +16,56 @@ export function Ranking() {
   const [filas, setFilas] = useState<RankingFila[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [tarda, setTarda] = useState(false);
+  const ritmoActual = useRef(ritmo);
+  const generacion = useRef(0);
+  ritmoActual.current = ritmo;
 
   useEffect(() => {
+    if (!cargando) return;
+    const id = window.setTimeout(() => setTarda(true), 4000);
+    return () => window.clearTimeout(id);
+  }, [cargando]);
+
+  useEffect(() => {
+    const marca = ++generacion.current;
     setCargando(true);
+    setTarda(false);
     setError(null);
     api<RankingFila[]>(`/ranking?ritmo=${ritmo}`)
-      .then(setFilas)
+      .then((datos) => {
+        if (generacion.current === marca) setFilas(datos);
+      })
       .catch((e: unknown) => {
+        if (generacion.current !== marca) return;
         setError(e instanceof HttpError ? e.message : "No se pudo cargar el ranking");
         setFilas([]);
       })
-      .finally(() => setCargando(false));
+      .finally(() => {
+        if (generacion.current === marca) setCargando(false);
+      });
   }, [ritmo]);
+
+  useEffect(() => {
+    if (!usuario) return;
+    let vivo = true;
+    const pedido = ritmo;
+    api("/partidas/sincronizar-ahora", { method: "POST" })
+      .then(() => (vivo ? api<RankingFila[]>(`/ranking?ritmo=${pedido}`) : null))
+      .then((datos) => {
+        if (vivo && datos && ritmoActual.current === pedido) {
+          generacion.current += 1;
+          setFilas(datos);
+          setCargando(false);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+    // Solo al entrar con sesión: una búsqueda corta, no en cada cambio de ritmo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario]);
 
   return (
     <div className="space-y-6">
@@ -67,7 +105,12 @@ export function Ranking() {
 
       <div className="card overflow-hidden">
         {cargando ? (
-          <p className="px-5 py-10 text-mute">Cargando ranking…</p>
+          <p className="px-5 py-10 text-mute">
+            Cargando ranking…
+            {tarda
+              ? " El servidor estaba dormido y está arrancando. La primera vez puede tardar cerca de un minuto."
+              : null}
+          </p>
         ) : error ? (
           <p className="px-5 py-10 text-bad">{error}</p>
         ) : filas.length === 0 ? (
