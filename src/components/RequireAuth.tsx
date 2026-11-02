@@ -24,7 +24,13 @@ export function RequireAuth() {
     );
   }
   if (!usuario) {
-    return <Navigate to="/entrar" replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to="/entrar"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
   }
   return <Outlet />;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -11,10 +11,11 @@ const LABELS: Record<Ritmo, string> = {
 };
 
 const MOTIVOS: Record<string, string> = {
-  denegado: "Cancelaste el acceso en Lichess.",
-  ocupada:
-    "Esa cuenta de Lichess ya está en uso, o tu usuario ya tiene otra plataforma vinculada.",
-  datos: "Lichess no devolvió una cuenta válida. Inténtalo de nuevo.",
+  denegado:
+    "Cancelaste el acceso en Lichess. Si tienes el modo infantil activo, Lichess no deja autorizar apps: desactívalo en Preferencias.",
+  ocupada: "Esa cuenta de Lichess ya está en uso por otro miembro.",
+  expirado: "Tardaste demasiado en autorizar. Vuelve a pulsar Conectar Lichess.",
+  datos: "Lichess no confirmó la cuenta. Prueba de nuevo o escribe tu usuario abajo.",
 };
 
 export function Cuenta() {
@@ -24,6 +25,7 @@ export function Cuenta() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [usuarioLichess, setUsuarioLichess] = useState("");
 
   useEffect(() => {
     const lichess = params.get("lichess");
@@ -46,6 +48,25 @@ export function Cuenta() {
       window.location.assign(data.url);
     } catch (e: unknown) {
       setError(e instanceof HttpError ? e.message : "No se pudo abrir Lichess");
+      setOcupado(false);
+    }
+  }
+
+  async function vincularUsuario(ev: FormEvent) {
+    ev.preventDefault();
+    setError(null);
+    setOcupado(true);
+    try {
+      await api("/lichess/vincular", {
+        method: "POST",
+        body: JSON.stringify({ username: usuarioLichess }),
+      });
+      await recargar();
+      setAviso("Lichess quedó vinculado. Solo cuentan las partidas de ahora en adelante.");
+      setUsuarioLichess("");
+    } catch (e: unknown) {
+      setError(e instanceof HttpError ? e.message : "No se pudo vincular Lichess");
+    } finally {
       setOcupado(false);
     }
   }
@@ -167,7 +188,8 @@ export function Cuenta() {
           <div className="mt-3 space-y-4">
             <p className="text-sm text-mute">
               Entras con tu cuenta de Lichess. Desde ese momento, las partidas nuevas contra
-              alguien de la comunidad entran al ranking.
+              alguien de la comunidad entran al ranking. Si el botón no abre Lichess, escribe
+              tu usuario.
             </p>
             <button
               type="button"
@@ -177,6 +199,22 @@ export function Cuenta() {
             >
               Conectar Lichess
             </button>
+            <form onSubmit={(ev) => void vincularUsuario(ev)} className="space-y-3">
+              <label className="block text-sm font-medium">
+                Usuario de Lichess
+                <input
+                  type="text"
+                  autoComplete="username"
+                  value={usuarioLichess}
+                  onChange={(e) => setUsuarioLichess(e.target.value)}
+                  placeholder="tuusuario"
+                  className="field"
+                />
+              </label>
+              <button type="submit" disabled={ocupado || usuarioLichess.trim().length < 2} className="btn-ghost w-full sm:w-auto">
+                Vincular con usuario
+              </button>
+            </form>
           </div>
         )}
       </section>

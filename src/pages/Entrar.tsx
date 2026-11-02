@@ -7,7 +7,8 @@ import { useAuth } from "../lib/auth";
 export function Entrar() {
   const { entrar, entrarConGoogle } = useAuth();
   const navigate = useNavigate();
-  const from = (useLocation().state as { from?: string } | null)?.from || "/cuenta";
+  const crudo = (useLocation().state as { from?: string } | null)?.from || "/cuenta";
+  const from = crudo.startsWith("/") && !crudo.startsWith("//") ? crudo : "/cuenta";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
