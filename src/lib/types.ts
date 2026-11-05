@@ -44,6 +44,11 @@ export type RankingFila = {
   partidas_jugadas: number;
 };
 
+export type RankingProgresoFila = RankingFila & {
+  elo_inicio: number;
+  subida: number;
+};
+
 export type Partida = {
   id: number;
   plataforma: string;
