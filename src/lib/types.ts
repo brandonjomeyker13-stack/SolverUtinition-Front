@@ -44,9 +44,27 @@ export type RankingFila = {
   partidas_jugadas: number;
 };
 
-export type RankingProgresoFila = RankingFila & {
-  elo_inicio: number;
+export type RankingMesFila = {
+  posicion: number;
+  usuario_id: number;
+  nombre: string;
+  chesscom_username: string | null;
+  lichess_username: string | null;
+  elo: number;
   subida: number;
+  partidas: number;
+  ganadas: number;
+  tablas: number;
+  perdidas: number;
+};
+
+export type RankingMes = {
+  mes: string;
+  ritmo: Ritmo;
+  plataforma: "lichess" | "chesscom" | null;
+  desde: string;
+  hasta: string;
+  filas: RankingMesFila[];
 };
 
 export type Partida = {

@@ -1,11 +1,20 @@
 import { api } from "./api";
-import type { RankingFila, RankingProgresoFila, Ritmo } from "./types";
+import type { RankingFila, RankingMes, Ritmo } from "./types";
 
 export function rankingPorElo(ritmo: Ritmo): Promise<RankingFila[]> {
   return api<RankingFila[]>(`/ranking?ritmo=${ritmo}`);
 }
 
-/** Ordenado por puntos subidos desde el inicio. Aún no se muestra en ninguna página. */
-export function rankingPorProgreso(ritmo: Ritmo): Promise<RankingProgresoFila[]> {
-  return api<RankingProgresoFila[]>(`/ranking/progreso?ritmo=${ritmo}`);
+/** Solo Lichess hasta que Chess.com entregue su API. */
+export function rankingDelMes(ritmo: Ritmo): Promise<RankingMes> {
+  return api<RankingMes>(`/ranking/mes?ritmo=${ritmo}&plataforma=lichess`);
+}
+
+export function nombreDelMes(mes: string): string {
+  const [anio, numero] = mes.split("-").map(Number);
+  const texto = new Date(anio, numero - 1, 1).toLocaleDateString("es", {
+    month: "long",
+    year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
