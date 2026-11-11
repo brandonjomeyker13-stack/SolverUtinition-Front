@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { VerificarChesscom } from "../components/VerificarChesscom";
 import { api, HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Ritmo } from "../lib/types";
@@ -91,7 +92,7 @@ export function Cuenta() {
     try {
       await api("/chesscom", { method: "DELETE" });
       await recargar();
-      setAviso("Se desvinculó Chess.com. Ya puedes conectar Lichess.");
+      setAviso("Se desvinculó Chess.com.");
     } catch (e: unknown) {
       setError(e instanceof HttpError ? e.message : "No se pudo desvincular");
     } finally {
@@ -151,6 +152,38 @@ export function Cuenta() {
         })}
       </section>
 
+      {usuario.chesscom ? (
+        <section className="card p-4 sm:p-6">
+          <h2 className="font-display text-xl">Chess.com</h2>
+          <div className="mt-3 space-y-4">
+            <p className="text-sm text-mute">
+              Vinculado como{" "}
+              <span className="font-medium text-ink">{usuario.chesscom.username_visible}</span>
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button type="button" disabled={ocupado} onClick={() => void sincronizar()} className="btn w-full sm:w-auto">
+                Buscar partidas nuevas
+              </button>
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => void desvincularChesscom()}
+                className="btn-ghost w-full sm:w-auto"
+              >
+                Desvincular
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!usuario.lichess && !usuario.chesscom ? (
+        <p className="text-sm text-mute">
+          Cada jugador usa una sola plataforma. Elige Lichess o Chess.com.
+        </p>
+      ) : null}
+
+      {!usuario.chesscom ? (
       <section className="card p-4 sm:p-6">
         <h2 className="font-display text-xl">Lichess</h2>
         {usuario.lichess ? (
@@ -167,22 +200,6 @@ export function Cuenta() {
                 Desvincular
               </button>
             </div>
-          </div>
-        ) : usuario.chesscom ? (
-          <div className="mt-3 space-y-4">
-            <p className="text-sm text-mute">
-              Esta cuenta sigue en Chess.com como{" "}
-              <span className="font-medium text-ink">{usuario.chesscom.username_visible}</span>. Un
-              jugador usa una sola plataforma. Desvincúlala para entrar con Lichess.
-            </p>
-            <button
-              type="button"
-              disabled={ocupado}
-              onClick={() => void desvincularChesscom()}
-              className="btn-ghost w-full sm:w-auto"
-            >
-              Desvincular Chess.com
-            </button>
           </div>
         ) : (
           <div className="mt-3 space-y-4">
@@ -218,6 +235,23 @@ export function Cuenta() {
           </div>
         )}
       </section>
+      ) : null}
+
+      {!usuario.lichess && !usuario.chesscom ? (
+        <section className="card p-4 sm:p-6">
+          <h2 className="font-display text-xl">Chess.com</h2>
+          <VerificarChesscom
+            usuarioId={usuario.id}
+            onVinculado={async (nombre) => {
+              await recargar();
+              setError(null);
+              setAviso(
+                `Chess.com quedó vinculado como ${nombre}. Ya puedes quitar el código de tu ubicación. Solo cuentan las partidas de ahora en adelante.`,
+              );
+            }}
+          />
+        </section>
+      ) : null}
 
       <button
         type="button"
