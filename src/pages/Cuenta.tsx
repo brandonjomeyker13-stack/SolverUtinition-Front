@@ -152,38 +152,10 @@ export function Cuenta() {
         })}
       </section>
 
-      {usuario.chesscom ? (
-        <section className="card p-4 sm:p-6">
-          <h2 className="font-display text-xl">Chess.com</h2>
-          <div className="mt-3 space-y-4">
-            <p className="text-sm text-mute">
-              Vinculado como{" "}
-              <span className="font-medium text-ink">{usuario.chesscom.username_visible}</span>
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button type="button" disabled={ocupado} onClick={() => void sincronizar()} className="btn w-full sm:w-auto">
-                Buscar partidas nuevas
-              </button>
-              <button
-                type="button"
-                disabled={ocupado}
-                onClick={() => void desvincularChesscom()}
-                className="btn-ghost w-full sm:w-auto"
-              >
-                Desvincular
-              </button>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <p className="text-sm text-mute">
+        Puedes vincular Lichess, Chess.com o las dos. Las partidas de ambas suman al mismo ranking.
+      </p>
 
-      {!usuario.lichess && !usuario.chesscom ? (
-        <p className="text-sm text-mute">
-          Cada jugador usa una sola plataforma. Elige Lichess o Chess.com.
-        </p>
-      ) : null}
-
-      {!usuario.chesscom ? (
       <section className="card p-4 sm:p-6">
         <h2 className="font-display text-xl">Lichess</h2>
         {usuario.lichess ? (
@@ -235,11 +207,30 @@ export function Cuenta() {
           </div>
         )}
       </section>
-      ) : null}
 
-      {!usuario.lichess && !usuario.chesscom ? (
-        <section className="card p-4 sm:p-6">
-          <h2 className="font-display text-xl">Chess.com</h2>
+      <section className="card p-4 sm:p-6">
+        <h2 className="font-display text-xl">Chess.com</h2>
+        {usuario.chesscom ? (
+          <div className="mt-3 space-y-4">
+            <p className="text-sm text-mute">
+              Vinculado como{" "}
+              <span className="font-medium text-ink">{usuario.chesscom.username_visible}</span>
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button type="button" disabled={ocupado} onClick={() => void sincronizar()} className="btn w-full sm:w-auto">
+                Buscar partidas nuevas
+              </button>
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => void desvincularChesscom()}
+                className="btn-ghost w-full sm:w-auto"
+              >
+                Desvincular
+              </button>
+            </div>
+          </div>
+        ) : (
           <VerificarChesscom
             usuarioId={usuario.id}
             onVinculado={async (nombre) => {
@@ -250,8 +241,8 @@ export function Cuenta() {
               );
             }}
           />
-        </section>
-      ) : null}
+        )}
+      </section>
 
       <button
         type="button"
