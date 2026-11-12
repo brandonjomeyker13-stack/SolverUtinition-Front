@@ -16,16 +16,12 @@ const ICONS = {
   entrar: "M10 7H6.5A1.5 1.5 0 0 0 5 8.5v7A1.5 1.5 0 0 0 6.5 17H10M10 12h9M16 8l4 4-4 4",
   crear: "M12 6v12M6 12h12",
   salir: "M14 7h3.5A1.5 1.5 0 0 1 19 8.5v7a1.5 1.5 0 0 1-1.5 1.5H14M14 12H5M8 8l-4 4 4 4",
-  pieza: "M9 20h6M8 17h8l-1-5h-6l-1 5ZM10 12l-.5-3h5l-.5 3M12 4v2M10.5 5h3",
 };
 
-function Marca() {
+function Marca({ className }: { className: string }) {
   return (
-    <NavLink to="/" className="flex items-center gap-2.5 text-ink">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-white shadow-[0_6px_16px_rgb(93_95_239/0.35)]">
-        <Icono d={ICONS.pieza} className="h-5 w-5" />
-      </span>
-      <span className="text-lg font-semibold tracking-tight">SolverUnition</span>
+    <NavLink to="/" aria-label="SolverUnition, ir al ranking" className="inline-flex shrink-0">
+      <img src="/logo-horizontal.png" alt="SolverUnition" width="661" height="160" className={`w-auto ${className}`} />
     </NavLink>
   );
 }
@@ -64,7 +60,7 @@ export function Layout() {
       </a>
 
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-panel px-5 py-7 md:flex">
-        <Marca />
+        <Marca className="h-11" />
         <nav aria-label="Secciones" className="mt-10 flex flex-col gap-1.5">
           {items.map((item) => (
             <NavLink
@@ -105,7 +101,7 @@ export function Layout() {
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 border-b border-line bg-panel/90 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden">
           <div className="flex h-14 items-center justify-between px-4">
-            <Marca />
+            <Marca className="h-9" />
             {usuario ? (
               <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
                 {usuario.nombre.charAt(0).toUpperCase()}

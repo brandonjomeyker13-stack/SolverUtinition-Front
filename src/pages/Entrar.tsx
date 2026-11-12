@@ -50,8 +50,9 @@ export function Entrar() {
 
   return (
     <div className="mx-auto max-w-md space-y-6">
-      <div>
-        <h1 className="font-display text-3xl">Entrar</h1>
+      <div className="flex flex-col items-center text-center">
+        <img src="/logo-caballo.png" alt="" width="56" height="80" className="mb-4 h-20 w-auto" />
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Entrar</h1>
         <p className="mt-2 text-sm text-mute">Usa tu cuenta de la comunidad o Google.</p>
       </div>
 
