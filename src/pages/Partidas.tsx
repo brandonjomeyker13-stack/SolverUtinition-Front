@@ -74,10 +74,10 @@ export function Partidas() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl">Tus partidas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Tus partidas</h1>
         <p className="mt-2 text-sm text-mute">
           {buscando
-            ? "Buscando en Lichess las partidas nuevas de la comunidad…"
+            ? "Buscando en Lichess y Chess.com las partidas nuevas de la comunidad…"
             : "Solo las que ya se anotaron en el ranking de la comunidad."}
         </p>
       </div>
@@ -90,8 +90,8 @@ export function Partidas() {
         ) : filas.length === 0 ? (
           <p className="px-4 py-10 text-mute sm:px-5">
             {buscando
-              ? "Buscando en Lichess…"
-              : "Aún no hay partidas. Cuenta si ambos ya tenían Lichess conectado antes de que terminara, y si fue bala, blitz o rápida estándar."}
+              ? "Buscando partidas nuevas…"
+              : "Aún no hay partidas. Cuenta si ambos ya tenían esa plataforma vinculada antes de que terminara, y si fue bala, blitz o rápida estándar."}
           </p>
         ) : (
           <>

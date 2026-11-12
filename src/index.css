@@ -1,20 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", Georgia, serif;
-  --color-canvas: #f4f7f4;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #f6f7fb;
   --color-panel: #ffffff;
-  --color-raised: #e7f2eb;
-  --color-line: #d3e2d8;
-  --color-ink: #173028;
-  --color-cream: #173028;
-  --color-mute: #3f5349;
-  --color-accent: #1b7a4b;
-  --color-gold: #8a5a12;
-  --color-gold-dim: #6d4a10;
-  --color-good: #157a42;
-  --color-bad: #b42318;
+  --color-raised: #f0f0ff;
+  --color-line: #edf0f7;
+  --color-ink: #151d48;
+  --color-cream: #151d48;
+  --color-mute: #737791;
+  --color-accent: #5d5fef;
+  --color-accent-soft: #e9e9fd;
+  --color-gold: #e07a3f;
+  --color-gold-dim: #b85f2c;
+  --color-good: #0f9f6e;
+  --color-bad: #e5484d;
+  --color-rosa: #ffe2e5;
+  --color-rosa-fuerte: #fa5a7d;
+  --color-durazno: #fff4de;
+  --color-durazno-fuerte: #ff947a;
+  --color-menta: #dcfce7;
+  --color-menta-fuerte: #3cd856;
+  --color-lila: #f3e8ff;
+  --color-lila-fuerte: #bf83ff;
 }
 
 html,
@@ -29,9 +38,7 @@ html {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(900px 420px at 100% -10%, #d9f0e2 0%, transparent 55%),
-    var(--color-canvas);
+  background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
@@ -48,7 +55,7 @@ button {
 }
 
 ::selection {
-  background: #1b7a4b33;
+  background: #5d5fef33;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -62,18 +69,30 @@ button {
 
 @layer components {
   .card {
-    @apply rounded-3xl border border-line bg-panel shadow-[0_1px_2px_rgb(23_48_40/0.04),0_12px_32px_rgb(23_48_40/0.05)];
+    @apply rounded-[20px] border border-line bg-panel shadow-[0_4px_20px_rgb(21_29_72/0.04)];
   }
 
   .field {
-    @apply mt-1.5 min-h-12 w-full rounded-2xl border border-line bg-white px-3.5 text-base text-ink;
+    @apply mt-1.5 min-h-12 w-full rounded-2xl border border-line bg-canvas px-3.5 text-base text-ink focus:bg-white;
   }
 
   .btn {
-    @apply inline-flex min-h-12 items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-white disabled:opacity-60;
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl bg-accent px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgb(93_95_239/0.25)] transition hover:brightness-110 disabled:opacity-60;
   }
 
   .btn-ghost {
-    @apply inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-4 text-sm font-medium text-ink disabled:opacity-60;
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl border border-line bg-white px-4 text-sm font-medium text-ink transition hover:bg-canvas disabled:opacity-60;
+  }
+
+  .segmento {
+    @apply flex gap-1 rounded-2xl bg-panel p-1 shadow-[0_2px_10px_rgb(21_29_72/0.05)];
+  }
+
+  .segmento-boton {
+    @apply min-h-10 flex-1 rounded-xl px-3 text-sm font-medium text-mute transition;
+  }
+
+  .segmento-boton[aria-pressed="true"] {
+    @apply bg-accent text-white shadow-[0_6px_16px_rgb(93_95_239/0.3)];
   }
 }

@@ -1,13 +1,13 @@
 import { api } from "./api";
-import type { RankingFila, RankingMes, Ritmo } from "./types";
+import type { Plataforma, RankingFila, RankingReal, Ritmo } from "./types";
 
 export function rankingPorElo(ritmo: Ritmo): Promise<RankingFila[]> {
   return api<RankingFila[]>(`/ranking?ritmo=${ritmo}`);
 }
 
-/** Solo Lichess hasta que Chess.com entregue su API. */
-export function rankingDelMes(ritmo: Ritmo): Promise<RankingMes> {
-  return api<RankingMes>(`/ranking/mes?ritmo=${ritmo}&plataforma=lichess`);
+/** Rating real de cada cuenta en la plataforma: cuánto subió en el mes. */
+export function rankingRealDelMes(plataforma: Plataforma, ritmo: Ritmo): Promise<RankingReal> {
+  return api<RankingReal>(`/ranking/mes/real?plataforma=${plataforma}&ritmo=${ritmo}`);
 }
 
 export function nombreDelMes(mes: string): string {

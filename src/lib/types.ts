@@ -68,6 +68,26 @@ export type RankingMes = {
   filas: RankingMesFila[];
 };
 
+export type Plataforma = "lichess" | "chesscom";
+
+export type RankingRealFila = {
+  posicion: number;
+  usuario_id: number;
+  nombre: string;
+  username: string;
+  elo_inicio: number;
+  elo: number;
+  subida: number;
+  partidas: number | null;
+};
+
+export type RankingReal = {
+  mes: string;
+  ritmo: Ritmo;
+  plataforma: Plataforma;
+  filas: RankingRealFila[];
+};
+
 export type Partida = {
   id: number;
   plataforma: string;
