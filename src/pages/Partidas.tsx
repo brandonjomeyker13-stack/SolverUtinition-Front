@@ -18,6 +18,20 @@ function verEn(plataforma: string) {
   return plataforma === "lichess" ? "ver en Lichess" : "ver en Chess.com";
 }
 
+function miLado(p: Partida, usuarioId: number | undefined) {
+  const soyBlanca = usuarioId === p.blanca_id;
+  const gano = p.resultado === (soyBlanca ? "1-0" : "0-1");
+  const perdio = p.resultado === (soyBlanca ? "0-1" : "1-0");
+  return {
+    soyBlanca,
+    rival: soyBlanca ? p.negra_nombre : p.blanca_nombre,
+    delta: soyBlanca ? p.delta_blanca : p.delta_negra,
+    elo: soyBlanca ? p.elo_blanca_antes : p.elo_negra_antes,
+    resultado: gano ? "Ganaste" : perdio ? "Perdiste" : "Tablas",
+    claseResultado: gano ? "text-good" : perdio ? "text-bad" : "text-mute",
+  };
+}
+
 export function Partidas() {
   const { usuario } = useAuth();
   const [filas, setFilas] = useState<Partida[]>([]);
@@ -83,29 +97,28 @@ export function Partidas() {
           <>
             <ul className="divide-y divide-line/60 md:hidden">
               {filas.map((p) => {
-                const soyBlanca = usuario?.id === p.blanca_id;
-                const miDelta = soyBlanca ? p.delta_blanca : p.delta_negra;
-                const miElo = soyBlanca ? p.elo_blanca_antes : p.elo_negra_antes;
+                const yo = miLado(p, usuario?.id);
                 return (
                   <li key={p.id} className="px-4 py-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm">
-                          {soyBlanca ? "Blancas" : "Negras"} · {RITMO[p.ritmo]}
+                        <p className="font-medium break-words">vs {yo.rival}</p>
+                        <p className="mt-1 text-sm text-mute">
+                          {yo.soyBlanca ? "Blancas" : "Negras"} · {RITMO[p.ritmo]}
                         </p>
                         <p className="mt-1 text-xs text-mute">
                           {new Date(p.terminada_en).toLocaleString("es")}
                         </p>
                       </div>
                       <p className="shrink-0 text-right">
-                        <span className={miDelta >= 0 ? "text-good" : "text-bad"}>
-                          {delta(miDelta)}
+                        <span className={yo.delta >= 0 ? "text-good" : "text-bad"}>
+                          {delta(yo.delta)}
                         </span>
-                        <span className="mt-1 block text-xs text-mute">desde {miElo}</span>
+                        <span className="mt-1 block text-xs text-mute">desde {yo.elo}</span>
                       </p>
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-3 text-sm">
-                      <span className="text-mute">{p.resultado}</span>
+                      <span className={`font-medium ${yo.claseResultado}`}>{yo.resultado}</span>
                       {p.url ? (
                         <a
                           href={p.url}
@@ -126,6 +139,7 @@ export function Partidas() {
                 <thead className="border-b border-line text-mute">
                   <tr>
                     <th className="px-5 py-3 font-medium">Fecha</th>
+                    <th className="px-5 py-3 font-medium">Rival</th>
                     <th className="px-5 py-3 font-medium">Color</th>
                     <th className="px-5 py-3 font-medium">Ritmo</th>
                     <th className="px-5 py-3 font-medium">Resultado</th>
@@ -134,22 +148,21 @@ export function Partidas() {
                 </thead>
                 <tbody>
                   {filas.map((p) => {
-                    const soyBlanca = usuario?.id === p.blanca_id;
-                    const miDelta = soyBlanca ? p.delta_blanca : p.delta_negra;
-                    const miElo = soyBlanca ? p.elo_blanca_antes : p.elo_negra_antes;
+                    const yo = miLado(p, usuario?.id);
                     return (
                       <tr key={p.id} className="border-b border-line/60 last:border-0">
                         <td className="px-5 py-3 text-mute">
                           {new Date(p.terminada_en).toLocaleString("es")}
                         </td>
-                        <td className="px-5 py-3">{soyBlanca ? "Blancas" : "Negras"}</td>
+                        <td className="px-5 py-3 font-medium">{yo.rival}</td>
+                        <td className="px-5 py-3">{yo.soyBlanca ? "Blancas" : "Negras"}</td>
                         <td className="px-5 py-3 text-mute">{RITMO[p.ritmo]}</td>
-                        <td className="px-5 py-3">{p.resultado}</td>
+                        <td className={`px-5 py-3 font-medium ${yo.claseResultado}`}>{yo.resultado}</td>
                         <td className="px-5 py-3">
-                          <span className={miDelta >= 0 ? "text-good" : "text-bad"}>
-                            {delta(miDelta)}
+                          <span className={yo.delta >= 0 ? "text-good" : "text-bad"}>
+                            {delta(yo.delta)}
                           </span>
-                          <span className="ml-2 text-mute">desde {miElo}</span>
+                          <span className="ml-2 text-mute">desde {yo.elo}</span>
                           {p.url ? (
                             <a
                               href={p.url}

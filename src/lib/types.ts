@@ -50,6 +50,7 @@ export type RankingMesFila = {
   nombre: string;
   chesscom_username: string | null;
   lichess_username: string | null;
+  elo_inicio: number;
   elo: number;
   subida: number;
   partidas: number;
@@ -73,6 +74,8 @@ export type Partida = {
   plataforma_partida_id: string;
   blanca_id: number;
   negra_id: number;
+  blanca_nombre: string;
+  negra_nombre: string;
   ritmo: Ritmo;
   rated_en_plataforma: boolean;
   resultado: ResultadoPartida;

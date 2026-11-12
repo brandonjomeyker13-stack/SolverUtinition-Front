@@ -26,7 +26,11 @@ function pedir(vista: Vista, ritmo: Ritmo): Promise<Datos> {
 }
 
 function conSigno(n: number) {
-  return n > 0 ? `+${n}` : String(n);
+  return n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "+0";
+}
+
+function claseCambio(n: number) {
+  return n > 0 ? "text-good" : n < 0 ? "text-bad" : "text-mute";
 }
 
 export function Ranking() {
@@ -101,7 +105,8 @@ export function Ranking() {
         {vista === "mes" ? (
           <p className="mt-2 text-sm text-mute">
             {datos?.vista === "mes" ? `${nombreDelMes(datos.mes.mes)}. ` : null}
-            Gana quien más Elo sube en el mes, empiece donde empiece. Se reinicia el día 1.
+            Cada uno arranca el mes con el Elo que tenía el día 1. Gana quien más sube, empiece
+            donde empiece.
           </p>
         ) : null}
       </section>
@@ -167,7 +172,7 @@ export function Ranking() {
         ) : vacio ? (
           <p className="px-5 py-10 text-mute">
             {vista === "mes"
-              ? "Nadie ha jugado este mes en este ritmo. Juega en Lichess con alguien de la comunidad."
+              ? "Todavía nadie ha conectado Lichess. Conéctalo en tu cuenta y juega con alguien de la comunidad."
               : "Todavía no hay partidas en este ritmo. Conecta Lichess y juega con alguien de la comunidad."}
           </p>
         ) : datos?.vista === "mes" ? (
@@ -198,13 +203,13 @@ function TablaMes({ mes }: { mes: RankingMes }) {
             </div>
             <div className="shrink-0 text-right">
               <p
-                className={`font-display text-2xl tabular-nums leading-none ${
-                  fila.subida >= 0 ? "text-good" : "text-bad"
-                }`}
+                className={`font-display text-2xl tabular-nums leading-none ${claseCambio(fila.subida)}`}
               >
                 {conSigno(fila.subida)}
               </p>
-              <p className="mt-1 text-xs text-mute">Elo {fila.elo}</p>
+              <p className="mt-1 text-xs tabular-nums text-mute">
+                {fila.elo_inicio} → {fila.elo}
+              </p>
             </div>
           </li>
         ))}
@@ -214,8 +219,9 @@ function TablaMes({ mes }: { mes: RankingMes }) {
           <tr>
             <th className="px-5 py-3 font-medium">#</th>
             <th className="px-5 py-3 font-medium">Jugador</th>
-            <th className="px-5 py-3 font-medium">Subida</th>
-            <th className="px-5 py-3 font-medium">Elo</th>
+            <th className="px-5 py-3 font-medium">Inicio del mes</th>
+            <th className="px-5 py-3 font-medium">Cambio</th>
+            <th className="px-5 py-3 font-medium">Elo actual</th>
             <th className="px-5 py-3 font-medium">Partidas</th>
           </tr>
         </thead>
@@ -229,14 +235,11 @@ function TablaMes({ mes }: { mes: RankingMes }) {
                   <div className="break-all text-xs text-mute">{fila.lichess_username}</div>
                 ) : null}
               </td>
-              <td
-                className={`px-5 py-3.5 font-display text-lg tabular-nums ${
-                  fila.subida >= 0 ? "text-good" : "text-bad"
-                }`}
-              >
+              <td className="px-5 py-3.5 tabular-nums text-mute">{fila.elo_inicio}</td>
+              <td className={`px-5 py-3.5 font-display text-lg tabular-nums ${claseCambio(fila.subida)}`}>
                 {conSigno(fila.subida)}
               </td>
-              <td className="px-5 py-3.5 tabular-nums text-mute">{fila.elo}</td>
+              <td className="px-5 py-3.5 tabular-nums">{fila.elo}</td>
               <td className="px-5 py-3.5 tabular-nums text-mute">
                 {fila.partidas}
                 <span className="ml-2 text-xs">
