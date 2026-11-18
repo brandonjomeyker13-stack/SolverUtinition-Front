@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 function Icono({ d, className = "h-6 w-6" }: { d: string; className?: string }) {
@@ -30,6 +30,7 @@ function Marca({ className }: { className: string }) {
 export function Layout() {
   const { usuario, salir } = useAuth();
   const navigate = useNavigate();
+  const ancho = useLocation().pathname.startsWith("/analisis/");
 
   async function onSalir() {
     try {
@@ -112,7 +113,10 @@ export function Layout() {
           </div>
         </header>
 
-        <main id="contenido" className="mx-auto max-w-6xl px-4 pt-5 pb-28 md:px-8 md:py-9">
+        <main
+          id="contenido"
+          className={`mx-auto px-4 pt-5 pb-28 md:px-8 md:py-9 ${ancho ? "max-w-[1600px] lg:px-6" : "max-w-6xl"}`}
+        >
           <Outlet />
         </main>
       </div>

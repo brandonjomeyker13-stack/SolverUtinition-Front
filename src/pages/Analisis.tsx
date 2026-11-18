@@ -43,6 +43,14 @@ function prefijoComun(a: Mov[], b: Mov[]) {
   return i;
 }
 
+type Pestana = "analisis" | "motor" | "precision";
+
+const PESTANAS: { id: Pestana; nombre: string }[] = [
+  { id: "analisis", nombre: "Análisis" },
+  { id: "motor", nombre: "Motor" },
+  { id: "precision", nombre: "Precisión" },
+];
+
 export function Analisis() {
   const { plataforma, id } = useParams<{ plataforma: Plataforma; id: string }>();
   const location = useLocation();
@@ -59,6 +67,7 @@ export function Analisis() {
   const [cursor, setCursor] = useState(0);
   const [orientacion, setOrientacion] = useState<"white" | "black">("white");
   const [motorEncendido, setMotorEncendido] = useState(true);
+  const [pestana, setPestana] = useState<Pestana>("analisis");
   const [vivo, setVivo] = useState<{ fen: string; lineas: Linea[] } | null>(null);
   const motor = useRef<Motor | null>(null);
   const cancelado = useRef(false);
@@ -312,7 +321,7 @@ export function Analisis() {
   const abajo = orientacion === partida.color ? yo : otro;
 
   return (
-    <div className="space-y-3 lg:-my-3 lg:flex lg:h-[calc(100dvh-3rem)] lg:flex-col">
+    <div className="space-y-3 lg:-my-7 lg:flex lg:h-[calc(100dvh-1.25rem)] lg:flex-col lg:space-y-2">
       <div className="flex items-center gap-3">
         <Link
           to="/partidas"
@@ -338,8 +347,8 @@ export function Analisis() {
         </a>
       </div>
 
-      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(320px,1fr)]">
-        <div className="mx-auto w-full space-y-1.5 lg:w-[max(300px,min(640px,calc(100dvh_-_12.5rem)))]">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(280px,340px)] lg:justify-center xl:grid-cols-[auto_380px]">
+        <div className="mx-auto w-full space-y-1 lg:w-[max(320px,min(860px,calc(100dvh_-_8.5rem),calc(100vw_-_43rem)))]">
           <Jugador nombre={arriba.nombre} elo={arriba.elo} />
           <div className="flex items-stretch gap-2">
             <BarraEval evaluacion={evalActual} orientacion={orientacion} />
@@ -373,182 +382,211 @@ export function Analisis() {
           </div>
         </div>
 
-        <div className="space-y-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
-          <section className="card space-y-3 p-3">
-            {jugadas && tuyo && rival && clasificadas ? null : progreso !== null ? (
-              <div>
-                <p className="text-sm font-medium text-ink">Analizando la partida… {Math.round(progreso * 100)} %</p>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-canvas">
-                  <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progreso * 100}%` }} />
-                </div>
-                <p className="mt-2 text-xs text-mute">Corre en tu dispositivo con Stockfish. No cierres esta página.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-mute">
-                  {oficial ? (
-                    <p className="mb-0.5 font-medium text-ink">
-                      Precisión en Chess.com: tú {oficial[partida.color]} % · {otro.nombre}{" "}
-                      {oficial[partida.color === "white" ? "black" : "white"]} %
-                    </p>
-                  ) : null}
-                  <p>Revisa toda la partida para ver tu precisión y por qué cada jugada es buena o mala.</p>
-                </div>
-                <button type="button" className="btn shrink-0" onClick={() => void analizarPartida()}>
-                  Analizar partida
-                </button>
-              </div>
-            )}
-            {aviso ? <p className="text-sm text-bad">{aviso}</p> : null}
-            {actual && ultima ? (
-              <div className="flex items-start gap-3 text-sm">
-                <Insignia categoria={actual.categoria} />
-                <div className="min-w-0">
-                  <p className="font-semibold" style={{ color: META[actual.categoria].color }}>
-                    {ultima.san} es {META[actual.categoria].nombre.toLowerCase()}
-                  </p>
-                  {explicacion ? <p className="mt-0.5 text-ink/80">{explicacion}</p> : null}
-                  {sanMejorPrevia && mejorPrevia ? (
-                    <button
-                      type="button"
-                      className="mt-1 text-xs font-medium text-accent underline"
-                      onClick={() => probarUci(ultima.fenAntes, mejorPrevia, cursor - 1)}
-                    >
-                      Probar {sanMejorPrevia}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ) : jugadas ? (
-              <p className="text-sm text-mute">Avanza por las jugadas para ver por qué cada una es buena o mala.</p>
-            ) : null}
-          </section>
-          <section className="card p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">Motor</h2>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-mute">
-                <input
-                  type="checkbox"
-                  checked={motorEncendido}
-                  onChange={(e) => setMotorEncendido(e.target.checked)}
-                  className="h-4 w-4 accent-[#5d5fef]"
-                />
-                Stockfish 19
-              </label>
-            </div>
-            {!motorEncendido ? (
-              <p className="text-xs text-mute">Apagado.</p>
-            ) : evalFinal ? (
-              <p className="text-xs text-mute">Fin de la partida.</p>
-            ) : lineasVivas.length === 0 ? (
-              <p className="text-xs text-mute">{progreso !== null ? "Ocupado analizando la partida…" : "Pensando…"}</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {lineasVivas.map((l) => (
-                  <li key={l.multipv}>
-                    <button
-                      type="button"
-                      onClick={() => l.pv[0] && probarUci(fen, l.pv[0], cursor)}
-                      className="flex w-full items-start gap-2 rounded-lg px-1 py-1 text-left text-sm hover:bg-canvas"
-                    >
-                      <span
-                        className={`w-14 shrink-0 rounded-md px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${
-                          (l.evaluacion.mate ?? l.evaluacion.cp ?? 0) >= 0 ? "bg-white text-ink ring-1 ring-line" : "bg-[#403d39] text-white"
-                        }`}
-                      >
-                        {textoEvaluacion(l.evaluacion)}
-                      </span>
-                      <span className="min-w-0 truncate text-ink/80">{sanDeVariante(fen, l.pv).join(" ")}</span>
-                    </button>
-                  </li>
-                ))}
-                <li className="px-1 text-[11px] text-mute">Profundidad {lineasVivas[0]?.profundidad}</li>
-              </ul>
-            )}
-          </section>
+        <div className="flex flex-col gap-3 lg:min-h-0">
+          <div role="tablist" aria-label="Secciones del análisis" className="card flex gap-1 p-1">
+            {PESTANAS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-selected={pestana === p.id}
+                onClick={() => setPestana(p.id)}
+                className={`min-h-9 flex-1 rounded-xl text-sm font-medium transition-colors ${
+                  pestana === p.id ? "bg-accent text-white" : "text-mute hover:bg-canvas hover:text-ink"
+                }`}
+              >
+                {p.nombre}
+              </button>
+            ))}
+          </div>
 
-          <section className="card p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">Jugadas</h2>
-              {variante ? (
-                <button
-                  type="button"
-                  className="text-xs font-medium text-accent underline"
-                  onClick={() => {
-                    setCursor(Math.min(cursor, variante.base));
-                    setVariante(null);
-                  }}
-                >
-                  Volver a la partida
-                </button>
-              ) : null}
-            </div>
-            <ListaJugadas
-              movs={movs}
-              categorias={clasificadas?.map((c) => c.categoria) ?? null}
-              actual={enPrincipal ? cursor : -1}
-              blancasEmpiezan={blancasEmpiezan}
-              alElegir={(n) => {
-                setVariante(null);
-                setCursor(n);
-              }}
-            />
-            {variante ? (
-              <div className="mt-3 rounded-xl bg-accent-soft/60 p-2 text-sm">
-                <p className="mb-1 text-xs font-medium text-accent">Tu variante</p>
-                <div className="flex flex-wrap gap-1">
-                  {variante.movs.map((m, i) => {
-                    const n = variante.base + i + 1;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setCursor(n)}
-                        className={`rounded-md px-1.5 py-0.5 ${cursor === n ? "bg-accent text-white" : "text-ink hover:bg-white"}`}
-                      >
-                        {m.san}
-                      </button>
-                    );
-                  })}
+          {!jugadas ? (
+            <section className="card p-3">
+              {progreso !== null ? (
+                <div>
+                  <p className="text-sm font-medium text-ink">Analizando la partida… {Math.round(progreso * 100)} %</p>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-canvas">
+                    <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progreso * 100}%` }} />
+                  </div>
+                  <p className="mt-2 text-xs text-mute">Corre en tu dispositivo con Stockfish. No cierres esta página.</p>
                 </div>
-              </div>
-            ) : null}
-          </section>
-
-          {completo ? (
-            <GraficaEval
-              evals={evals}
-              actual={enPrincipal ? cursor : variante?.base ?? 0}
-              alElegir={(n) => {
-                setVariante(null);
-                setCursor(n);
-              }}
-            />
-          ) : null}
-
-          {jugadas && tuyo && rival && clasificadas ? (
-            <section className="card space-y-3 p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Precision
-                  titulo="Tú"
-                  valor={oficial ? oficial[partida.color] : tuyo.precision}
-                  propia={oficial ? tuyo.precision : null}
-                  destacado
-                />
-                <Precision
-                  titulo={otro.nombre}
-                  valor={oficial ? oficial[partida.color === "white" ? "black" : "white"] : rival.precision}
-                  propia={oficial ? rival.precision : null}
-                />
-              </div>
-              <p className="text-[11px] text-mute">
-                {oficial
-                  ? "Precisión oficial de Chess.com (de su Game Review). Debajo, la que calculamos con nuestro motor."
-                  : "Precisión calculada con nuestro motor. Si abres el Game Review en Chess.com, aquí verás la oficial."}
-              </p>
-              <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-mute">Revisa toda la partida para ver por qué cada jugada es buena o mala.</p>
+                  <button type="button" className="btn w-full" onClick={() => void analizarPartida()}>
+                    Analizar partida
+                  </button>
+                </div>
+              )}
+              {aviso ? <p className="mt-2 text-sm text-bad">{aviso}</p> : null}
             </section>
           ) : null}
+
+          <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            {pestana === "analisis" ? (
+              <>
+                {actual && ultima ? (
+                  <section className="card flex items-start gap-3 p-3 text-sm">
+                    <Insignia categoria={actual.categoria} />
+                    <div className="min-w-0">
+                      <p className="font-semibold" style={{ color: META[actual.categoria].color }}>
+                        {ultima.san} es {META[actual.categoria].nombre.toLowerCase()}
+                      </p>
+                      {explicacion ? <p className="mt-0.5 text-ink/80">{explicacion}</p> : null}
+                      {sanMejorPrevia && mejorPrevia ? (
+                        <button
+                          type="button"
+                          className="mt-1 text-xs font-medium text-accent underline"
+                          onClick={() => probarUci(ultima.fenAntes, mejorPrevia, cursor - 1)}
+                        >
+                          Probar {sanMejorPrevia}
+                        </button>
+                      ) : null}
+                    </div>
+                  </section>
+                ) : jugadas ? (
+                  <section className="card p-3 text-sm text-mute">
+                    Avanza por las jugadas para ver por qué cada una es buena o mala.
+                  </section>
+                ) : null}
+
+                <section className="card flex flex-col p-3 lg:min-h-48 lg:flex-1">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-ink">Jugadas</h2>
+                    {variante ? (
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-accent underline"
+                        onClick={() => {
+                          setCursor(Math.min(cursor, variante.base));
+                          setVariante(null);
+                        }}
+                      >
+                        Volver a la partida
+                      </button>
+                    ) : null}
+                  </div>
+                  <ListaJugadas
+                    movs={movs}
+                    categorias={clasificadas?.map((c) => c.categoria) ?? null}
+                    actual={enPrincipal ? cursor : -1}
+                    blancasEmpiezan={blancasEmpiezan}
+                    alElegir={(n) => {
+                      setVariante(null);
+                      setCursor(n);
+                    }}
+                  />
+                  {variante ? (
+                    <div className="mt-3 rounded-xl bg-accent-soft/60 p-2 text-sm">
+                      <p className="mb-1 text-xs font-medium text-accent">Tu variante</p>
+                      <div className="flex flex-wrap gap-1">
+                        {variante.movs.map((m, i) => {
+                          const n = variante.base + i + 1;
+                          return (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setCursor(n)}
+                              className={`rounded-md px-1.5 py-0.5 ${cursor === n ? "bg-accent text-white" : "text-ink hover:bg-white"}`}
+                            >
+                              {m.san}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              </>
+            ) : null}
+
+            {pestana === "motor" ? (
+              <section className="card p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-ink">Stockfish 19</h2>
+                  <label className="flex cursor-pointer items-center gap-2 text-xs text-mute">
+                    <input
+                      type="checkbox"
+                      checked={motorEncendido}
+                      onChange={(e) => setMotorEncendido(e.target.checked)}
+                      className="h-4 w-4 accent-[#5d5fef]"
+                    />
+                    Encendido
+                  </label>
+                </div>
+                {!motorEncendido ? (
+                  <p className="text-xs text-mute">Apagado.</p>
+                ) : evalFinal ? (
+                  <p className="text-xs text-mute">Fin de la partida.</p>
+                ) : lineasVivas.length === 0 ? (
+                  <p className="text-xs text-mute">{progreso !== null ? "Ocupado analizando la partida…" : "Pensando…"}</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {lineasVivas.map((l) => (
+                      <li key={l.multipv}>
+                        <button
+                          type="button"
+                          onClick={() => l.pv[0] && probarUci(fen, l.pv[0], cursor)}
+                          className="flex w-full items-start gap-2 rounded-lg px-1 py-1 text-left text-sm hover:bg-canvas"
+                        >
+                          <span
+                            className={`w-14 shrink-0 rounded-md px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${
+                              (l.evaluacion.mate ?? l.evaluacion.cp ?? 0) >= 0 ? "bg-white text-ink ring-1 ring-line" : "bg-[#403d39] text-white"
+                            }`}
+                          >
+                            {textoEvaluacion(l.evaluacion)}
+                          </span>
+                          <span className="min-w-0 text-ink/80">{sanDeVariante(fen, l.pv).join(" ")}</span>
+                        </button>
+                      </li>
+                    ))}
+                    <li className="px-1 text-[11px] text-mute">Profundidad {lineasVivas[0]?.profundidad}</li>
+                  </ul>
+                )}
+              </section>
+            ) : null}
+
+            {pestana === "precision" ? (
+              <>
+                {oficial || (tuyo && rival) ? (
+                  <section className="card space-y-3 p-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Precision titulo="Tú" valor={oficial ? oficial[partida.color] : tuyo?.precision ?? null} destacado />
+                      <Precision
+                        titulo={otro.nombre}
+                        valor={oficial ? oficial[partida.color === "white" ? "black" : "white"] : rival?.precision ?? null}
+                      />
+                    </div>
+                    <p className="text-[11px] text-mute">
+                      {oficial
+                        ? "Precisión oficial de Chess.com, tomada de su Game Review."
+                        : partida.plataforma === "chesscom"
+                        ? "Esta partida no tiene Game Review en Chess.com, así que la estimamos con Stockfish. Abre el Game Review en Chess.com y aquí verás la oficial."
+                        : "Estimada con Stockfish a partir de cuánta probabilidad de ganar pierde cada jugada."}
+                    </p>
+                  </section>
+                ) : null}
+                {clasificadas ? (
+                  <section className="card p-3">
+                    <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
+                  </section>
+                ) : null}
+                {completo ? (
+                  <GraficaEval
+                    evals={evals}
+                    actual={enPrincipal ? cursor : variante?.base ?? 0}
+                    alElegir={(n) => {
+                      setVariante(null);
+                      setCursor(n);
+                    }}
+                  />
+                ) : null}
+                {!jugadas && !oficial ? (
+                  <section className="card p-3 text-sm text-mute">Analiza la partida para ver la precisión y el conteo de jugadas.</section>
+                ) : null}
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -557,7 +595,7 @@ export function Analisis() {
 
 function Jugador({ nombre, elo }: { nombre: string; elo: number | null }) {
   return (
-    <p className="flex items-center gap-2 px-1 text-sm">
+    <p className="flex items-center gap-2 px-1 text-sm leading-5">
       <span className="font-semibold text-ink">{nombre}</span>
       {elo ? <span className="text-mute">({elo})</span> : null}
     </p>
@@ -571,7 +609,7 @@ function Boton({ etiqueta, onClick, d }: { etiqueta: string; onClick: () => void
       onClick={onClick}
       aria-label={etiqueta}
       title={etiqueta}
-      className="grid min-h-11 flex-1 place-items-center rounded-xl text-ink hover:bg-canvas"
+      className="grid min-h-11 flex-1 place-items-center rounded-xl text-ink hover:bg-canvas lg:min-h-9"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <path d={d} strokeLinecap="round" strokeLinejoin="round" />
@@ -580,18 +618,7 @@ function Boton({ etiqueta, onClick, d }: { etiqueta: string; onClick: () => void
   );
 }
 
-function Precision({
-  titulo,
-  valor,
-  propia,
-  destacado = false,
-}: {
-  titulo: string;
-  valor: number | null;
-  /** La nuestra, cuando la principal es la oficial de Chess.com. */
-  propia: number | null;
-  destacado?: boolean;
-}) {
+function Precision({ titulo, valor, destacado = false }: { titulo: string; valor: number | null; destacado?: boolean }) {
   return (
     <div className={`rounded-2xl p-3 ${destacado ? "bg-accent-soft" : "bg-canvas"}`}>
       <p className="truncate text-xs text-mute">{titulo}</p>
@@ -599,9 +626,7 @@ function Precision({
         {valor ?? "—"}
         <span className="text-sm font-medium"> %</span>
       </p>
-      <p className="text-[11px] text-mute">
-        {propia !== null ? `Precisión · nuestra: ${propia} %` : "Precisión"}
-      </p>
+      <p className="text-[11px] text-mute">Precisión</p>
     </div>
   );
 }
@@ -672,7 +697,7 @@ function ListaJugadas({
     });
   }
   return (
-    <ol className="grid max-h-72 grid-cols-[auto_1fr_1fr] gap-x-1 overflow-y-auto text-sm lg:max-h-96">
+    <ol className="grid max-h-72 grid-cols-[auto_1fr_1fr] content-start gap-x-1 overflow-y-auto text-sm lg:max-h-none lg:min-h-0 lg:flex-1">
       {filas.map((f) => (
         <li key={f.numero} className="contents">
           <span className="py-1 pr-1 text-right text-xs tabular-nums text-mute">{f.numero}.</span>
