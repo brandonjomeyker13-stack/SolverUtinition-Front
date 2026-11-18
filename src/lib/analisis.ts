@@ -29,25 +29,49 @@ export function clase(caida: number): Clase {
   return null;
 }
 
-export type JugadaEvaluada = { blancas: boolean; caida: number; clase: Clase; precision: number };
+/** `peso`: cuánto se movía la partida alrededor de la jugada; las posiciones agitadas pesan más. */
+export type JugadaEvaluada = { blancas: boolean; caida: number; clase: Clase; precision: number; peso: number };
+
+function desviacion(valores: number[]) {
+  const media = valores.reduce((s, v) => s + v, 0) / valores.length;
+  return Math.sqrt(valores.reduce((s, v) => s + (v - media) ** 2, 0) / valores.length);
+}
+
+function pesos(porcentajes: number[], jugadasTotales: number) {
+  const ventana = Math.max(2, Math.min(8, Math.floor(jugadasTotales / 10)));
+  const deslizantes =
+    porcentajes.length <= ventana
+      ? [porcentajes]
+      : porcentajes.slice(0, porcentajes.length - ventana + 1).map((_, i) => porcentajes.slice(i, i + ventana));
+  const relleno = Array(Math.max(0, Math.min(ventana, porcentajes.length) - 2)).fill(porcentajes.slice(0, ventana));
+  return [...relleno, ...deslizantes].map((v) => Math.max(0.5, Math.min(12, desviacion(v))));
+}
 
 export function evaluarJugadas(inicial: Evaluacion, evals: Evaluacion[], blancasEmpiezan = true): JugadaEvaluada[] {
-  let previo = porcentajeVictoria(centipeones(inicial));
-  return evals.map((e, i) => {
+  const porcentajes = [inicial, ...evals].map((e) => porcentajeVictoria(centipeones(e)));
+  const listaPesos = pesos(porcentajes, evals.length);
+  return evals.map((_, i) => {
     const blancas = (i % 2 === 0) === blancasEmpiezan;
-    const actual = porcentajeVictoria(centipeones(e));
+    const [previo, actual] = [porcentajes[i], porcentajes[i + 1]];
     const [antes, despues] = blancas ? [previo, actual] : [100 - previo, 100 - actual];
     const caida = Math.max(0, antes - despues);
-    previo = actual;
-    return { blancas, caida, clase: clase(caida), precision: precisionJugada(antes, despues) };
+    const peso = listaPesos[i] ?? listaPesos[listaPesos.length - 1];
+    return { blancas, caida, clase: clase(caida), precision: precisionJugada(antes, despues), peso };
   });
+}
+
+/** Como Lichess: media ponderada y media armónica a partes iguales, así un error grave pesa mucho. */
+function precisionPartida(mias: JugadaEvaluada[]): number | null {
+  if (mias.length === 0) return null;
+  const ponderada = mias.reduce((s, j) => s + j.precision * j.peso, 0) / mias.reduce((s, j) => s + j.peso, 0);
+  const armonica = mias.length / mias.reduce((s, j) => s + 1 / Math.max(1, j.precision), 0);
+  return Math.round(((ponderada + armonica) / 2) * 10) / 10;
 }
 
 export function totales(jugadas: JugadaEvaluada[], blancas: boolean) {
   const mias = jugadas.filter((j) => j.blancas === blancas);
-  const precision = mias.length ? mias.reduce((s, j) => s + j.precision, 0) / mias.length : null;
   return {
-    precision: precision === null ? null : Math.round(precision * 10) / 10,
+    precision: precisionPartida(mias),
     imprecisiones: mias.filter((j) => j.clase === "imprecision").length,
     errores: mias.filter((j) => j.clase === "error").length,
     errores_graves: mias.filter((j) => j.clase === "error_grave").length,

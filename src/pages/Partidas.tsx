@@ -143,7 +143,11 @@ function PartidasGenerales({ plataforma, vinculada }: { plataforma: Plataforma; 
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold ${r.clase}`}>{r.texto}</span>
                 <span className="text-xs font-medium text-accent">
-                  {p.analizada ? `${p.precision ?? "—"} % precisión` : "Analizar"}
+                  {p.precision_oficial
+                    ? `${p.precision_oficial[p.color]} % precisión`
+                    : p.analizada
+                      ? `${p.precision ?? "—"} % precisión`
+                      : "Analizar"}
                 </span>
               </div>
             </button>

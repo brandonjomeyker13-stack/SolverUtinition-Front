@@ -278,6 +278,7 @@ export function Analisis() {
     flechas.push({ desde: uci.slice(0, 2), hasta: uci.slice(2, 4), color: "green" });
   }
 
+  const oficial = partida.precision_oficial ?? null;
   const tuyo = jugadas ? totales(jugadas, partida.color === "white") : null;
   const rival = jugadas ? totales(jugadas, partida.color !== "white") : null;
   const yo = partida.color === "white" ? partida.blancas : partida.negras;
@@ -345,9 +346,23 @@ export function Analisis() {
             {jugadas && tuyo && rival && clasificadas ? (
               <>
                 <div className="grid grid-cols-2 gap-3">
-                  <Precision titulo="Tú" valor={tuyo.precision} destacado />
-                  <Precision titulo={otro.nombre} valor={rival.precision} />
+                  <Precision
+                    titulo="Tú"
+                    valor={oficial ? oficial[partida.color] : tuyo.precision}
+                    propia={oficial ? tuyo.precision : null}
+                    destacado
+                  />
+                  <Precision
+                    titulo={otro.nombre}
+                    valor={oficial ? oficial[partida.color === "white" ? "black" : "white"] : rival.precision}
+                    propia={oficial ? rival.precision : null}
+                  />
                 </div>
+                <p className="text-[11px] text-mute">
+                  {oficial
+                    ? "Precisión oficial de Chess.com (de su Game Review). Debajo, la que calculamos con nuestro motor."
+                    : "Precisión calculada con nuestro motor. Si abres el Game Review en Chess.com, aquí verás la oficial."}
+                </p>
                 <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
               </>
             ) : progreso !== null ? (
@@ -524,7 +539,18 @@ function Boton({ etiqueta, onClick, d }: { etiqueta: string; onClick: () => void
   );
 }
 
-function Precision({ titulo, valor, destacado = false }: { titulo: string; valor: number | null; destacado?: boolean }) {
+function Precision({
+  titulo,
+  valor,
+  propia,
+  destacado = false,
+}: {
+  titulo: string;
+  valor: number | null;
+  /** La nuestra, cuando la principal es la oficial de Chess.com. */
+  propia: number | null;
+  destacado?: boolean;
+}) {
   return (
     <div className={`rounded-2xl p-3 ${destacado ? "bg-accent-soft" : "bg-canvas"}`}>
       <p className="truncate text-xs text-mute">{titulo}</p>
@@ -532,7 +558,9 @@ function Precision({ titulo, valor, destacado = false }: { titulo: string; valor
         {valor ?? "—"}
         <span className="text-sm font-medium"> %</span>
       </p>
-      <p className="text-[11px] text-mute">Precisión</p>
+      <p className="text-[11px] text-mute">
+        {propia !== null ? `Precisión · nuestra: ${propia} %` : "Precisión"}
+      </p>
     </div>
   );
 }

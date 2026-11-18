@@ -122,6 +122,8 @@ export type PartidaGeneral = {
   apertura: string | null;
   analizada: boolean;
   precision: number | null;
+  /** La de Chess.com, solo si la partida tiene Game Review. */
+  precision_oficial?: { white: number; black: number } | null;
 };
 
 export type EvaluacionGuardada = { cp?: number | null; mate?: number | null };
