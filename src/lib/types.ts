@@ -107,6 +107,68 @@ export type Partida = {
   url: string | null;
 };
 
+export type PartidaGeneral = {
+  plataforma: Plataforma;
+  id: string;
+  url: string;
+  pgn: string;
+  blancas: { nombre: string; elo: number | null };
+  negras: { nombre: string; elo: number | null };
+  color: "white" | "black";
+  resultado: "gano" | "perdio" | "tablas";
+  ritmo: string;
+  control: string;
+  terminada_en: string;
+  apertura: string | null;
+  analizada: boolean;
+  precision: number | null;
+};
+
+export type EvaluacionGuardada = { cp?: number | null; mate?: number | null };
+
+export type AnalisisGuardado = {
+  plataforma: Plataforma;
+  partida_id: string;
+  color: "white" | "black";
+  eval_inicial: EvaluacionGuardada;
+  evals: EvaluacionGuardada[];
+  mejores: (string | null)[];
+  precision: number | null;
+  imprecisiones: number;
+  errores: number;
+  errores_graves: number;
+  fuente: string;
+};
+
+export type Puzzle = {
+  fen: string;
+  solucion: string;
+  jugada: string;
+  caida: number;
+  plataforma: Plataforma;
+  partida_id: string;
+  url: string | null;
+};
+
+export type ResumenSemanal = {
+  semana: string;
+  titulo: string;
+  puntos: string[];
+  datos: {
+    partidas: number;
+    ganadas: number;
+    perdidas: number;
+    tablas: number;
+    precision: number | null;
+    errores_graves: number;
+    apresuradas: number;
+    perdidas_por_prisa: number;
+    aperturas: { color: "white" | "black"; apertura: string; puntos: number; partidas: number }[];
+    puzzles: Puzzle[];
+  };
+  created_at: string;
+};
+
 export type ApiError = {
   detail: string;
   codigo?: string;

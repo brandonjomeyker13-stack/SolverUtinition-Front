@@ -12,6 +12,7 @@ function Icono({ d, className = "h-6 w-6" }: { d: string; className?: string }) 
 const ICONS = {
   ranking: "M4 19V10M10 19V5M16 19v-7M21 19H3",
   partidas: "M5 6h14M5 12h14M5 18h9",
+  resumen: "M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5h4",
   cuenta: "M12 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM5 19.5a7 7 0 0 1 14 0",
   entrar: "M10 7H6.5A1.5 1.5 0 0 0 5 8.5v7A1.5 1.5 0 0 0 6.5 17H10M10 12h9M16 8l4 4-4 4",
   crear: "M12 6v12M6 12h12",
@@ -42,6 +43,7 @@ export function Layout() {
     ? [
         { to: "/", label: "Ranking", icon: ICONS.ranking, end: true },
         { to: "/partidas", label: "Partidas", icon: ICONS.partidas, end: false },
+        { to: "/resumen", label: "Resumen", icon: ICONS.resumen, end: false },
         { to: "/cuenta", label: "Cuenta", icon: ICONS.cuenta, end: false },
       ]
     : [

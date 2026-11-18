@@ -1,7 +1,158 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { Partida, Ritmo } from "../lib/types";
+import { partidasEnCache, partidasGenerales, RITMOS_GENERALES } from "../lib/partidasGenerales";
+import type { Partida, PartidaGeneral, Plataforma, Ritmo } from "../lib/types";
+
+type Pestana = Plataforma | "comunidad";
+
+const PESTANAS: { id: Pestana; label: string }[] = [
+  { id: "lichess", label: "Lichess" },
+  { id: "chesscom", label: "Chess.com" },
+  { id: "comunidad", label: "Comunidad" },
+];
+
+export function Partidas() {
+  const { usuario } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const porDefecto: Pestana = usuario?.lichess ? "lichess" : usuario?.chesscom ? "chesscom" : "comunidad";
+  const pedida = params.get("ver") as Pestana | null;
+  const pestana = PESTANAS.some((p) => p.id === pedida) ? pedida! : porDefecto;
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Tus partidas</h1>
+        <p className="mt-1 text-sm text-mute">
+          Toca una partida para analizarla con Stockfish: barra de ventaja, errores marcados y variantes.
+        </p>
+      </div>
+      <div className="segmento md:w-[420px]">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-pressed={pestana === p.id}
+            onClick={() => setParams({ ver: p.id }, { replace: true })}
+            className="segmento-boton"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {pestana === "comunidad" ? (
+        <PartidasComunidad />
+      ) : (
+        <PartidasGenerales
+          key={pestana}
+          plataforma={pestana}
+          vinculada={pestana === "lichess" ? !!usuario?.lichess : !!usuario?.chesscom}
+        />
+      )}
+    </div>
+  );
+}
+
+const RESULTADO = {
+  gano: { texto: "Ganaste", clase: "bg-good/10 text-good" },
+  perdio: { texto: "Perdiste", clase: "bg-bad/10 text-bad" },
+  tablas: { texto: "Tablas", clase: "bg-canvas text-mute" },
+} as const;
+
+function fechaCorta(iso: string) {
+  const fecha = new Date(iso);
+  const otroAno = fecha.getFullYear() !== new Date().getFullYear();
+  return fecha.toLocaleDateString("es", { day: "numeric", month: "short", ...(otroAno && { year: "numeric" }) });
+}
+
+function PartidasGenerales({ plataforma, vinculada }: { plataforma: Plataforma; vinculada: boolean }) {
+  const navigate = useNavigate();
+  const [filas, setFilas] = useState<PartidaGeneral[] | null>(() => partidasEnCache(plataforma));
+  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(vinculada);
+  const nombre = plataforma === "lichess" ? "Lichess" : "Chess.com";
+
+  useEffect(() => {
+    if (!vinculada) return;
+    let vivo = true;
+    partidasGenerales(plataforma)
+      .then((lista) => vivo && setFilas(lista))
+      .catch((e: unknown) => vivo && setError(e instanceof HttpError ? e.message : "No se pudieron cargar las partidas"))
+      .finally(() => vivo && setCargando(false));
+    return () => {
+      vivo = false;
+    };
+  }, [plataforma, vinculada]);
+
+  if (!vinculada) {
+    return (
+      <div className="card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-mute">Vincula tu cuenta de {nombre} para ver y analizar tus partidas.</p>
+        <Link to="/cuenta" className="btn">
+          Vincular {nombre}
+        </Link>
+      </div>
+    );
+  }
+
+  if (!filas && cargando) {
+    return (
+      <div className="card space-y-3 p-4" aria-busy="true">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-14 animate-pulse rounded-xl bg-canvas" />
+        ))}
+        <p className="text-center text-sm text-mute">Trayendo tus partidas de {nombre}…</p>
+      </div>
+    );
+  }
+  if (error && !filas) return <p className="card p-5 text-bad">{error}</p>;
+  if (!filas || filas.length === 0) {
+    return <p className="card p-5 text-sm text-mute">No encontramos partidas recientes en {nombre}.</p>;
+  }
+
+  return (
+    <ul className="card divide-y divide-line overflow-hidden">
+      {filas.map((p) => {
+        const rival = p.color === "white" ? p.negras : p.blancas;
+        const r = RESULTADO[p.resultado];
+        return (
+          <li key={p.id}>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/analisis/${p.plataforma}/${encodeURIComponent(p.id)}`, { state: { partida: p } })
+              }
+              className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas md:px-5"
+            >
+              <span
+                className={`h-8 w-8 shrink-0 rounded-lg border border-line ${p.color === "white" ? "bg-white" : "bg-[#403d39]"}`}
+                aria-label={p.color === "white" ? "Jugaste con blancas" : "Jugaste con negras"}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-ink">
+                  vs {rival.nombre}
+                  {rival.elo ? <span className="font-normal text-mute"> ({rival.elo})</span> : null}
+                </p>
+                <p className="truncate text-xs text-mute">
+                  {RITMOS_GENERALES[p.ritmo] ?? p.ritmo} · {p.control} ·{" "}
+                  {fechaCorta(p.terminada_en)}
+                  {p.apertura ? ` · ${p.apertura}` : ""}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span className={`rounded-lg px-2 py-0.5 text-xs font-semibold ${r.clase}`}>{r.texto}</span>
+                <span className="text-xs font-medium text-accent">
+                  {p.analizada ? `${p.precision ?? "—"} % precisión` : "Analizar"}
+                </span>
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 const RITMO: Record<Ritmo, string> = {
   rapid: "Rápida",
@@ -32,7 +183,7 @@ function miLado(p: Partida, usuarioId: number | undefined) {
   };
 }
 
-export function Partidas() {
+function PartidasComunidad() {
   const { usuario } = useAuth();
   const [filas, setFilas] = useState<Partida[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,15 +223,12 @@ export function Partidas() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Tus partidas</h1>
-        <p className="mt-2 text-sm text-mute">
-          {buscando
-            ? "Buscando en Lichess y Chess.com las partidas nuevas de la comunidad…"
-            : "Solo las que ya se anotaron en el ranking de la comunidad."}
-        </p>
-      </div>
+    <div className="space-y-3">
+      <p className="text-sm text-mute">
+        {buscando
+          ? "Buscando en Lichess y Chess.com las partidas nuevas de la comunidad…"
+          : "Solo las que ya se anotaron en el ranking de la comunidad."}
+      </p>
 
       <div className="card overflow-hidden">
         {cargando ? (

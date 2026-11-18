@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Notificaciones } from "../components/Notificaciones";
 import { VerificarChesscom } from "../components/VerificarChesscom";
 import { api, HttpError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -243,6 +244,8 @@ export function Cuenta() {
           />
         )}
       </section>
+
+      <Notificaciones />
 
       <button
         type="button"

@@ -2,11 +2,13 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { RequireAuth } from "./components/RequireAuth";
 import { AuthProvider } from "./lib/auth";
+import { Analisis } from "./pages/Analisis";
 import { Cuenta } from "./pages/Cuenta";
 import { Entrar } from "./pages/Entrar";
 import { Partidas } from "./pages/Partidas";
 import { Ranking } from "./pages/Ranking";
 import { Registro } from "./pages/Registro";
+import { Resumen } from "./pages/Resumen";
 
 export function App() {
   return (
@@ -20,6 +22,8 @@ export function App() {
             <Route element={<RequireAuth />}>
               <Route path="/cuenta" element={<Cuenta />} />
               <Route path="/partidas" element={<Partidas />} />
+              <Route path="/analisis/:plataforma/:id" element={<Analisis />} />
+              <Route path="/resumen" element={<Resumen />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
