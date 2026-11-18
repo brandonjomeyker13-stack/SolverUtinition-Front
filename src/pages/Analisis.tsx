@@ -21,7 +21,13 @@ import {
 } from "../lib/analisis";
 import { explicar } from "../lib/explicaciones";
 import { Motor, type Linea } from "../lib/motor";
-import { analisisGuardado, buscarPartida, guardarAnalisis, RITMOS_GENERALES } from "../lib/partidasGenerales";
+import {
+  analisisGuardado,
+  buscarPartida,
+  guardarAnalisis,
+  partidasGenerales,
+  RITMOS_GENERALES,
+} from "../lib/partidasGenerales";
 import type { PartidaGeneral, Plataforma } from "../lib/types";
 
 const PROFUNDIDAD_PARTIDA = 12;
@@ -74,24 +80,39 @@ export function Analisis() {
       .catch((e: unknown) => setError(e instanceof HttpError ? e.message : "No se pudo cargar la partida"));
   }, [partida, plataforma, id]);
 
+  useEffect(() => {
+    if (!partida || partida.plataforma !== "chesscom" || partida.precision_oficial !== undefined) return;
+    partidasGenerales("chesscom")
+      .then((lista) => {
+        const fresca = lista.find((p) => p.id === partida.id);
+        setPartida((actual) => (actual ? { ...actual, precision_oficial: fresca?.precision_oficial ?? null } : actual));
+      })
+      .catch(() => {});
+  }, [partida]);
+
+  const pgn = partida?.pgn;
   const base = useMemo(() => {
-    if (!partida) return null;
+    if (!pgn) return null;
     try {
-      return leerPartida(partida.pgn);
+      return leerPartida(pgn);
     } catch {
       return null;
     }
-  }, [partida]);
+  }, [pgn]);
 
+  // Solo al cambiar de partida: actualizar datos sueltos de la misma no debe borrar el análisis.
+  const plataformaPartida = partida?.plataforma;
+  const idPartida = partida?.id;
+  const colorPartida = partida?.color;
   useEffect(() => {
-    if (!partida || !base) return;
-    setOrientacion(partida.color);
+    if (!plataformaPartida || !idPartida || !colorPartida || !base) return;
+    setOrientacion(colorPartida);
     setEvals(Array(base.movs.length + 1).fill(null));
     setMejores(Array(base.movs.length + 1).fill(null));
     setSegundas(Array(base.movs.length + 1).fill(null));
     setCursor(0);
     setVariante(null);
-    analisisGuardado(partida.plataforma, partida.id)
+    analisisGuardado(plataformaPartida, idPartida)
       .then((a) => {
         if (a.evals.length !== base.movs.length) return;
         setEvals([a.eval_inicial, ...a.evals]);
@@ -99,7 +120,7 @@ export function Analisis() {
         if (a.segundas?.length === base.movs.length) setSegundas([...a.segundas, null]);
       })
       .catch(() => {});
-  }, [partida, base]);
+  }, [plataformaPartida, idPartida, colorPartida, base]);
 
   const movs = base?.movs ?? [];
   const linea = useMemo(
@@ -267,7 +288,11 @@ export function Analisis() {
 
   const ultima = cursor > 0 ? linea[cursor - 1] : null;
   const actual = enPrincipal && clasificadas && cursor > 0 ? clasificadas[cursor - 1] : null;
-  const explicacion = actual ? explicar(actual.datos, actual.categoria) : null;
+  const refutacion =
+    actual && ultima && vivo?.fen === ultima.fenDespues && (lineasVivas[0]?.profundidad ?? 0) >= 14
+      ? lineasVivas[0].pv
+      : null;
+  const explicacion = actual ? explicar(actual.datos, actual.categoria, refutacion) : null;
   const mejorPrevia = actual && MALAS.includes(actual.categoria) ? mejores[cursor - 1] : null;
   const sanMejorPrevia =
     ultima && mejorPrevia && mejorPrevia !== ultima.uci ? sanDeVariante(ultima.fenAntes, [mejorPrevia], 1)[0] : null;
@@ -287,13 +312,20 @@ export function Analisis() {
   const abajo = orientacion === partida.color ? yo : otro;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link to="/partidas" className="text-sm font-medium text-accent">
-            ← Tus partidas
-          </Link>
-          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight md:text-2xl">
+    <div className="space-y-3 lg:-my-3 lg:flex lg:h-[calc(100dvh-3rem)] lg:flex-col">
+      <div className="flex items-center gap-3">
+        <Link
+          to="/partidas"
+          aria-label="Volver a tus partidas"
+          title="Volver a tus partidas"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-panel text-accent ring-1 ring-line hover:bg-canvas"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-base font-semibold tracking-tight md:text-lg">
             {partida.blancas.nombre} vs {partida.negras.nombre}
           </h1>
           <p className="truncate text-xs text-mute">
@@ -306,8 +338,8 @@ export function Analisis() {
         </a>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
-        <div className="space-y-2">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[auto_minmax(320px,1fr)]">
+        <div className="mx-auto w-full space-y-1.5 lg:w-[max(300px,min(640px,calc(100dvh_-_12.5rem)))]">
           <Jugador nombre={arriba.nombre} elo={arriba.elo} />
           <div className="flex items-stretch gap-2">
             <BarraEval evaluacion={evalActual} orientacion={orientacion} />
@@ -328,7 +360,7 @@ export function Analisis() {
           </div>
           <Jugador nombre={abajo.nombre} elo={abajo.elo} />
 
-          <div className="card flex items-center justify-between gap-1 p-1.5">
+          <div className="card flex items-center justify-between gap-1 p-1">
             <Boton etiqueta="Inicio" onClick={() => irA(0)} d="M6 5v14M18 6l-8 6 8 6V6Z" />
             <Boton etiqueta="Anterior" onClick={() => irA(cursor - 1)} d="M15 6l-6 6 6 6" />
             <Boton etiqueta="Siguiente" onClick={() => irA(cursor + 1)} d="M9 6l6 6-6 6" />
@@ -341,31 +373,9 @@ export function Analisis() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          <section className="card space-y-3 p-4">
-            {jugadas && tuyo && rival && clasificadas ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Precision
-                    titulo="Tú"
-                    valor={oficial ? oficial[partida.color] : tuyo.precision}
-                    propia={oficial ? tuyo.precision : null}
-                    destacado
-                  />
-                  <Precision
-                    titulo={otro.nombre}
-                    valor={oficial ? oficial[partida.color === "white" ? "black" : "white"] : rival.precision}
-                    propia={oficial ? rival.precision : null}
-                  />
-                </div>
-                <p className="text-[11px] text-mute">
-                  {oficial
-                    ? "Precisión oficial de Chess.com (de su Game Review). Debajo, la que calculamos con nuestro motor."
-                    : "Precisión calculada con nuestro motor. Si abres el Game Review en Chess.com, aquí verás la oficial."}
-                </p>
-                <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
-              </>
-            ) : progreso !== null ? (
+        <div className="space-y-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+          <section className="card space-y-3 p-3">
+            {jugadas && tuyo && rival && clasificadas ? null : progreso !== null ? (
               <div>
                 <p className="text-sm font-medium text-ink">Analizando la partida… {Math.round(progreso * 100)} %</p>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-canvas">
@@ -375,9 +385,15 @@ export function Analisis() {
               </div>
             ) : (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-mute">
-                  Revisa toda la partida para ver tu precisión y marcar errores e imprecisiones.
-                </p>
+                <div className="text-sm text-mute">
+                  {oficial ? (
+                    <p className="mb-0.5 font-medium text-ink">
+                      Precisión en Chess.com: tú {oficial[partida.color]} % · {otro.nombre}{" "}
+                      {oficial[partida.color === "white" ? "black" : "white"]} %
+                    </p>
+                  ) : null}
+                  <p>Revisa toda la partida para ver tu precisión y por qué cada jugada es buena o mala.</p>
+                </div>
                 <button type="button" className="btn shrink-0" onClick={() => void analizarPartida()}>
                   Analizar partida
                 </button>
@@ -385,7 +401,7 @@ export function Analisis() {
             )}
             {aviso ? <p className="text-sm text-bad">{aviso}</p> : null}
             {actual && ultima ? (
-              <div className="flex items-start gap-3 rounded-xl bg-canvas px-3 py-2.5 text-sm">
+              <div className="flex items-start gap-3 text-sm">
                 <Insignia categoria={actual.categoria} />
                 <div className="min-w-0">
                   <p className="font-semibold" style={{ color: META[actual.categoria].color }}>
@@ -403,10 +419,11 @@ export function Analisis() {
                   ) : null}
                 </div>
               </div>
+            ) : jugadas ? (
+              <p className="text-sm text-mute">Avanza por las jugadas para ver por qué cada una es buena o mala.</p>
             ) : null}
           </section>
-
-          <section className="card p-4">
+          <section className="card p-3">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-ink">Motor</h2>
               <label className="flex cursor-pointer items-center gap-2 text-xs text-mute">
@@ -450,7 +467,7 @@ export function Analisis() {
             )}
           </section>
 
-          <section className="card p-4">
+          <section className="card p-3">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-ink">Jugadas</h2>
               {variante ? (
@@ -507,6 +524,30 @@ export function Analisis() {
                 setCursor(n);
               }}
             />
+          ) : null}
+
+          {jugadas && tuyo && rival && clasificadas ? (
+            <section className="card space-y-3 p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Precision
+                  titulo="Tú"
+                  valor={oficial ? oficial[partida.color] : tuyo.precision}
+                  propia={oficial ? tuyo.precision : null}
+                  destacado
+                />
+                <Precision
+                  titulo={otro.nombre}
+                  valor={oficial ? oficial[partida.color === "white" ? "black" : "white"] : rival.precision}
+                  propia={oficial ? rival.precision : null}
+                />
+              </div>
+              <p className="text-[11px] text-mute">
+                {oficial
+                  ? "Precisión oficial de Chess.com (de su Game Review). Debajo, la que calculamos con nuestro motor."
+                  : "Precisión calculada con nuestro motor. Si abres el Game Review en Chess.com, aquí verás la oficial."}
+              </p>
+              <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
+            </section>
           ) : null}
         </div>
       </div>
