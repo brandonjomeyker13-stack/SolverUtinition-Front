@@ -1,4 +1,4 @@
-import { Chess, type Move } from "chess.js";
+import { Chess, type Move, type Square } from "chess.js";
 
 /** Desde las blancas. Las mismas fórmulas que `app/analisis/metricas.py` del backend. */
 export type Evaluacion = { cp?: number | null; mate?: number | null };
@@ -23,7 +23,7 @@ function precisionJugada(antes: number, despues: number) {
 }
 
 export function clase(caida: number): Clase {
-  if (caida >= 15) return "error_grave";
+  if (caida >= 20) return "error_grave";
   if (caida >= 10) return "error";
   if (caida >= 5) return "imprecision";
   return null;
@@ -52,6 +52,96 @@ export function totales(jugadas: JugadaEvaluada[], blancas: boolean) {
     errores: mias.filter((j) => j.clase === "error").length,
     errores_graves: mias.filter((j) => j.clase === "error_grave").length,
   };
+}
+
+/** Como en el informe de Chess.com, de mejor a peor. */
+export type Categoria =
+  | "brillante"
+  | "genial"
+  | "mejor"
+  | "excelente"
+  | "buena"
+  | "teoria"
+  | "imprecision"
+  | "error"
+  | "oportunidad"
+  | "error_grave";
+
+export const CATEGORIAS: Categoria[] = [
+  "brillante",
+  "genial",
+  "mejor",
+  "excelente",
+  "buena",
+  "teoria",
+  "imprecision",
+  "error",
+  "oportunidad",
+  "error_grave",
+];
+
+/** Lo que hace falta saber de una jugada para clasificarla y explicarla. */
+export type DatosJugada = {
+  mov: Mov;
+  /** Medio movimiento desde el inicio, empezando en 0. */
+  ply: number;
+  blancas: boolean;
+  antes: Evaluacion;
+  despues: Evaluacion;
+  /** Mejor jugada en la posición antes de mover. */
+  mejor: string | null;
+  /** Evaluación de la segunda mejor jugada en esa posición. */
+  segunda: Evaluacion | null;
+  /** Mejor respuesta del rival después de la jugada. */
+  respuesta: string | null;
+  /** Evaluación antes de la jugada anterior del rival. */
+  previa: Evaluacion | null;
+  movPrevio: Mov | null;
+};
+
+const VALOR: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+/** Probabilidad de ganar (0-100) para quien mueve. */
+export function ganar(e: Evaluacion, blancas: boolean) {
+  const p = porcentajeVictoria(centipeones(e));
+  return blancas ? p : 100 - p;
+}
+
+/** Deja una pieza de valor donde el rival la puede tomar y no la recupera igual. */
+export function esSacrificio(mov: Mov): boolean {
+  const juego = new Chess(mov.fenDespues);
+  const pieza = juego.get(mov.hasta as Square);
+  if (!pieza || VALOR[pieza.type] < 3) return false;
+  const capturada = new Chess(mov.fenAntes).get(mov.hasta as Square);
+  if (VALOR[pieza.type] - (capturada ? VALOR[capturada.type] : 0) < 2) return false;
+  const rival = pieza.color === "w" ? "b" : "w";
+  const atacantes = juego.attackers(mov.hasta as Square, rival);
+  if (atacantes.length === 0) return false;
+  const defensores = juego.attackers(mov.hasta as Square, pieza.color);
+  const menor = Math.min(...atacantes.map((c) => VALOR[juego.get(c)?.type ?? "k"] || 100));
+  return defensores.length === 0 || menor < VALOR[pieza.type];
+}
+
+function esRecaptura(d: DatosJugada) {
+  return Boolean(d.movPrevio && d.movPrevio.hasta === d.mov.hasta && d.mov.san.includes("x") && d.movPrevio.san.includes("x"));
+}
+
+export function categoria(d: DatosJugada): Categoria {
+  const antes = ganar(d.antes, d.blancas);
+  const despues = ganar(d.despues, d.blancas);
+  const caida = Math.max(0, antes - despues);
+  const esMejor = d.mejor === d.mov.uci || caida < 0.5;
+
+  if (d.ply < 10 && caida < 2) return "teoria";
+  if (caida < 2 && despues >= 50 && antes < 90 && esSacrificio(d.mov)) return "brillante";
+  if (esMejor && d.segunda && antes - ganar(d.segunda, d.blancas) >= 15 && !esRecaptura(d)) return "genial";
+  if (esMejor) return "mejor";
+  if (caida < 2) return "excelente";
+  if (caida < 5) return "buena";
+  if (caida < 10) return "imprecision";
+  const rivalSeEquivoco = d.previa !== null && antes - ganar(d.previa, d.blancas) >= 15;
+  if (rivalSeEquivoco && antes >= 60 && despues >= 35) return "oportunidad";
+  return caida >= 20 ? "error_grave" : "error";
 }
 
 export function textoEvaluacion(e: Evaluacion): string {

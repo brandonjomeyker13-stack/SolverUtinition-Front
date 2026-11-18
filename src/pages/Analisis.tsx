@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { BarraEval, GraficaEval } from "../components/BarraEval";
+import { Insignia, META } from "../components/Insignia";
 import { Tablero, type Flecha } from "../components/Tablero";
 import { HttpError } from "../lib/api";
 import {
+  CATEGORIAS,
+  categoria,
   evaluacionFinal,
   evaluarJugadas,
   jugar,
@@ -11,10 +14,12 @@ import {
   sanDeVariante,
   textoEvaluacion,
   totales,
-  type Clase,
+  type Categoria,
+  type DatosJugada,
   type Evaluacion,
   type Mov,
 } from "../lib/analisis";
+import { explicar } from "../lib/explicaciones";
 import { Motor, type Linea } from "../lib/motor";
 import { analisisGuardado, buscarPartida, guardarAnalisis, RITMOS_GENERALES } from "../lib/partidasGenerales";
 import type { PartidaGeneral, Plataforma } from "../lib/types";
@@ -22,11 +27,7 @@ import type { PartidaGeneral, Plataforma } from "../lib/types";
 const PROFUNDIDAD_PARTIDA = 12;
 const PROFUNDIDAD_VIVO = 18;
 
-const MARCA: Record<Exclude<Clase, null>, { simbolo: string; clase: string; nombre: string }> = {
-  error_grave: { simbolo: "??", clase: "text-bad", nombre: "Error grave" },
-  error: { simbolo: "?", clase: "text-durazno-fuerte", nombre: "Error" },
-  imprecision: { simbolo: "?!", clase: "text-[#d4a106]", nombre: "Imprecisión" },
-};
+const MALAS: Categoria[] = ["imprecision", "error", "oportunidad", "error_grave"];
 
 type Variante = { base: number; movs: Mov[] };
 
@@ -45,6 +46,7 @@ export function Analisis() {
   const [error, setError] = useState<string | null>(null);
   const [evals, setEvals] = useState<(Evaluacion | null)[]>([]);
   const [mejores, setMejores] = useState<(string | null)[]>([]);
+  const [segundas, setSegundas] = useState<(Evaluacion | null)[]>([]);
   const [progreso, setProgreso] = useState<number | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [variante, setVariante] = useState<Variante | null>(null);
@@ -86,6 +88,7 @@ export function Analisis() {
     setOrientacion(partida.color);
     setEvals(Array(base.movs.length + 1).fill(null));
     setMejores(Array(base.movs.length + 1).fill(null));
+    setSegundas(Array(base.movs.length + 1).fill(null));
     setCursor(0);
     setVariante(null);
     analisisGuardado(partida.plataforma, partida.id)
@@ -93,6 +96,7 @@ export function Analisis() {
         if (a.evals.length !== base.movs.length) return;
         setEvals([a.eval_inicial, ...a.evals]);
         setMejores([...a.mejores, null]);
+        if (a.segundas?.length === base.movs.length) setSegundas([...a.segundas, null]);
       })
       .catch(() => {});
   }, [partida, base]);
@@ -110,6 +114,25 @@ export function Analisis() {
     () => (completo ? evaluarJugadas(evals[0]!, evals.slice(1) as Evaluacion[], blancasEmpiezan) : null),
     [completo, evals, blancasEmpiezan],
   );
+  const clasificadas = useMemo(() => {
+    if (!completo) return null;
+    return movs.map((mov, k) => {
+      const datos: DatosJugada = {
+        mov,
+        ply: k,
+        blancas: (k % 2 === 0) === blancasEmpiezan,
+        antes: evals[k]!,
+        despues: evals[k + 1]!,
+        mejor: mejores[k] ?? null,
+        segunda: segundas[k] ?? null,
+        respuesta: mejores[k + 1] ?? null,
+        previa: k > 0 ? evals[k - 1] : null,
+        movPrevio: k > 0 ? movs[k - 1] : null,
+      };
+      const cat = categoria(datos);
+      return { datos, categoria: cat };
+    });
+  }, [completo, movs, evals, mejores, segundas, blancasEmpiezan]);
 
   useEffect(() => {
     if (!motorEncendido || progreso !== null || !fen || !motor.current) return;
@@ -178,6 +201,7 @@ export function Analisis() {
     const posiciones = [base.inicial, ...base.movs.map((m) => m.fenDespues)];
     const nuevasEvals: (Evaluacion | null)[] = [...evals];
     const nuevasMejores: (string | null)[] = [...mejores];
+    const nuevasSegundas: (Evaluacion | null)[] = [...segundas];
     setAviso(null);
     setProgreso(0);
     for (let i = 0; i < posiciones.length; i++) {
@@ -186,9 +210,11 @@ export function Analisis() {
       if (final) {
         nuevasEvals[i] = final;
         nuevasMejores[i] = null;
+        nuevasSegundas[i] = null;
       } else {
         const r = await motor.current.analizar(posiciones[i], {
           profundidad: PROFUNDIDAD_PARTIDA,
+          multipv: 2,
           msMaximo: 1200,
         });
         if (cancelado.current) return;
@@ -199,9 +225,11 @@ export function Analisis() {
         }
         nuevasEvals[i] = r[0].evaluacion;
         nuevasMejores[i] = r[0].pv[0] ?? null;
+        nuevasSegundas[i] = r[1]?.evaluacion ?? null;
       }
       setEvals([...nuevasEvals]);
       setMejores([...nuevasMejores]);
+      setSegundas([...nuevasSegundas]);
       setProgreso((i + 1) / posiciones.length);
     }
     setProgreso(null);
@@ -211,6 +239,7 @@ export function Analisis() {
         nuevasEvals[0]!,
         nuevasEvals.slice(1) as Evaluacion[],
         nuevasMejores.slice(0, base.movs.length),
+        nuevasSegundas.slice(0, base.movs.length),
       );
       setPartida({ ...partida, analizada: true });
     } catch (e) {
@@ -237,8 +266,9 @@ export function Analisis() {
   }
 
   const ultima = cursor > 0 ? linea[cursor - 1] : null;
-  const marcaUltima = enPrincipal && jugadas && cursor > 0 ? jugadas[cursor - 1].clase : null;
-  const mejorPrevia = enPrincipal && cursor > 0 ? mejores[cursor - 1] : null;
+  const actual = enPrincipal && clasificadas && cursor > 0 ? clasificadas[cursor - 1] : null;
+  const explicacion = actual ? explicar(actual.datos, actual.categoria) : null;
+  const mejorPrevia = actual && MALAS.includes(actual.categoria) ? mejores[cursor - 1] : null;
   const sanMejorPrevia =
     ultima && mejorPrevia && mejorPrevia !== ultima.uci ? sanDeVariante(ultima.fenAntes, [mejorPrevia], 1)[0] : null;
 
@@ -287,6 +317,11 @@ export function Analisis() {
                 ultima={ultima ? [ultima.desde, ultima.hasta] : undefined}
                 flechas={flechas}
                 alMover={progreso === null ? alMover : undefined}
+                insignia={
+                  actual && ultima
+                    ? { casilla: ultima.hasta, contenido: <Insignia categoria={actual.categoria} /> }
+                    : undefined
+                }
               />
             </div>
           </div>
@@ -307,11 +342,14 @@ export function Analisis() {
 
         <div className="space-y-4">
           <section className="card space-y-3 p-4">
-            {jugadas && tuyo && rival ? (
-              <div className="grid grid-cols-2 gap-3">
-                <Precision titulo="Tú" datos={tuyo} destacado />
-                <Precision titulo={otro.nombre} datos={rival} />
-              </div>
+            {jugadas && tuyo && rival && clasificadas ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Precision titulo="Tú" valor={tuyo.precision} destacado />
+                  <Precision titulo={otro.nombre} valor={rival.precision} />
+                </div>
+                <Conteo clasificadas={clasificadas} tuyas={partida.color === "white"} rival={otro.nombre} />
+              </>
             ) : progreso !== null ? (
               <div>
                 <p className="text-sm font-medium text-ink">Analizando la partida… {Math.round(progreso * 100)} %</p>
@@ -331,24 +369,24 @@ export function Analisis() {
               </div>
             )}
             {aviso ? <p className="text-sm text-bad">{aviso}</p> : null}
-            {marcaUltima && ultima ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-canvas px-3 py-2 text-sm">
-                <span className={`font-semibold ${MARCA[marcaUltima].clase}`}>
-                  {ultima.san}
-                  {MARCA[marcaUltima].simbolo} {MARCA[marcaUltima].nombre}
-                </span>
-                {sanMejorPrevia && mejorPrevia ? (
-                  <>
-                    <span className="text-mute">Era mejor {sanMejorPrevia}.</span>
+            {actual && ultima ? (
+              <div className="flex items-start gap-3 rounded-xl bg-canvas px-3 py-2.5 text-sm">
+                <Insignia categoria={actual.categoria} />
+                <div className="min-w-0">
+                  <p className="font-semibold" style={{ color: META[actual.categoria].color }}>
+                    {ultima.san} es {META[actual.categoria].nombre.toLowerCase()}
+                  </p>
+                  {explicacion ? <p className="mt-0.5 text-ink/80">{explicacion}</p> : null}
+                  {sanMejorPrevia && mejorPrevia ? (
                     <button
                       type="button"
-                      className="font-medium text-accent underline"
+                      className="mt-1 text-xs font-medium text-accent underline"
                       onClick={() => probarUci(ultima.fenAntes, mejorPrevia, cursor - 1)}
                     >
-                      Probarla
+                      Probar {sanMejorPrevia}
                     </button>
-                  </>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </section>
@@ -415,7 +453,7 @@ export function Analisis() {
             </div>
             <ListaJugadas
               movs={movs}
-              jugadas={jugadas}
+              categorias={clasificadas?.map((c) => c.categoria) ?? null}
               actual={enPrincipal ? cursor : -1}
               blancasEmpiezan={blancasEmpiezan}
               alElegir={(n) => {
@@ -486,40 +524,72 @@ function Boton({ etiqueta, onClick, d }: { etiqueta: string; onClick: () => void
   );
 }
 
-function Precision({
-  titulo,
-  datos,
-  destacado = false,
-}: {
-  titulo: string;
-  datos: ReturnType<typeof totales>;
-  destacado?: boolean;
-}) {
+function Precision({ titulo, valor, destacado = false }: { titulo: string; valor: number | null; destacado?: boolean }) {
   return (
     <div className={`rounded-2xl p-3 ${destacado ? "bg-accent-soft" : "bg-canvas"}`}>
       <p className="truncate text-xs text-mute">{titulo}</p>
       <p className={`text-2xl font-semibold tabular-nums ${destacado ? "text-accent" : "text-ink"}`}>
-        {datos.precision ?? "—"}
+        {valor ?? "—"}
         <span className="text-sm font-medium"> %</span>
       </p>
-      <p className="mt-1 text-[11px] leading-tight text-mute">
-        <span className="text-[#b58a05]">{datos.imprecisiones} ?!</span> ·{" "}
-        <span className="text-durazno-fuerte">{datos.errores} ?</span> ·{" "}
-        <span className="text-bad">{datos.errores_graves} ??</span>
-      </p>
+      <p className="text-[11px] text-mute">Precisión</p>
     </div>
+  );
+}
+
+function Conteo({
+  clasificadas,
+  tuyas,
+  rival,
+}: {
+  clasificadas: { datos: DatosJugada; categoria: Categoria }[];
+  tuyas: boolean;
+  rival: string;
+}) {
+  const contar = (blancas: boolean, cat: Categoria) =>
+    clasificadas.filter((c) => c.datos.blancas === blancas && c.categoria === cat).length;
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-[11px] text-mute">
+          <th className="pb-1 text-left font-medium">Jugadas</th>
+          <th className="w-16 pb-1 text-center font-medium">Tú</th>
+          <th className="w-16 pb-1 text-center font-medium" title={rival}>
+            Rival
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {CATEGORIAS.map((cat) => (
+          <tr key={cat}>
+            <td className="py-0.5">
+              <span className="flex items-center gap-2">
+                <Insignia categoria={cat} tamano="sm" />
+                <span className="text-ink/80">{META[cat].nombre}</span>
+              </span>
+            </td>
+            <td className="text-center font-semibold tabular-nums" style={{ color: META[cat].color }}>
+              {contar(tuyas, cat)}
+            </td>
+            <td className="text-center font-semibold tabular-nums" style={{ color: META[cat].color }}>
+              {contar(!tuyas, cat)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
 function ListaJugadas({
   movs,
-  jugadas,
+  categorias,
   actual,
   blancasEmpiezan,
   alElegir,
 }: {
   movs: Mov[];
-  jugadas: ReturnType<typeof evaluarJugadas> | null;
+  categorias: Categoria[] | null;
   actual: number;
   blancasEmpiezan: boolean;
   alElegir: (n: number) => void;
@@ -545,14 +615,12 @@ function ListaJugadas({
                 key={k}
                 type="button"
                 onClick={() => alElegir(i + 1)}
-                className={`rounded-md px-1.5 py-1 text-left ${actual === i + 1 ? "bg-accent text-white" : "text-ink hover:bg-canvas"}`}
+                className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-left ${actual === i + 1 ? "bg-accent text-white" : "text-ink hover:bg-canvas"}`}
               >
-                {movs[i].san}
-                {jugadas?.[i]?.clase ? (
-                  <span className={`ml-0.5 font-semibold ${actual === i + 1 ? "" : MARCA[jugadas[i].clase!].clase}`}>
-                    {MARCA[jugadas[i].clase!].simbolo}
-                  </span>
+                {categorias?.[i] && categorias[i] !== "buena" && categorias[i] !== "excelente" ? (
+                  <Insignia categoria={categorias[i]} tamano="sm" />
                 ) : null}
+                {movs[i].san}
               </button>
             ),
           )}

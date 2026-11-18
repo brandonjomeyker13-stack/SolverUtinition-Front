@@ -3,7 +3,7 @@ import { Chessground } from "chessground";
 import type { Api } from "chessground/api";
 import type { DrawShape } from "chessground/draw";
 import type { Key } from "chessground/types";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import "chessground/assets/chessground.base.css";
 import "chessground/assets/chessground.brown.css";
 import "chessground/assets/chessground.cburnett.css";
@@ -18,7 +18,17 @@ type Props = {
   flechas?: Flecha[];
   /** Sin esto el tablero es solo para mirar. */
   alMover?: (desde: string, hasta: string) => void;
+  /** Se pinta en la esquina de la casilla, como el ícono de Chess.com. */
+  insignia?: { casilla: string; contenido: ReactNode };
 };
+
+function esquina(casilla: string, orientacion: "white" | "black") {
+  const columna = casilla.charCodeAt(0) - 97;
+  const fila = Number(casilla[1]);
+  const x = orientacion === "white" ? columna : 7 - columna;
+  const y = orientacion === "white" ? 8 - fila : fila - 1;
+  return { left: `${(x + 1) * 12.5}%`, top: `${y * 12.5}%` };
+}
 
 function turno(fen: string) {
   return fen.split(" ")[1] === "b" ? "black" : "white";
@@ -28,7 +38,7 @@ function enJaque(fen: string) {
   return new Chess(fen).inCheck() ? turno(fen) : false;
 }
 
-export function Tablero({ fen, orientacion, ultima, flechas = [], alMover }: Props) {
+export function Tablero({ fen, orientacion, ultima, flechas = [], alMover, insignia }: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
   const api = useRef<Api | null>(null);
   const alMoverRef = useRef(alMover);
@@ -89,6 +99,14 @@ export function Tablero({ fen, orientacion, ultima, flechas = [], alMover }: Pro
     <div className="relative aspect-square w-full overflow-hidden rounded-xl">
       {/* El CSS de chessground no va en capa y le gana a Tailwind: el tamaño va en línea. */}
       <div ref={contenedor} style={{ width: "100%", height: "100%" }} />
+      {insignia ? (
+        <div
+          className="pointer-events-none absolute z-10 -translate-x-full p-0.5 drop-shadow"
+          style={esquina(insignia.casilla, orientacion)}
+        >
+          {insignia.contenido}
+        </div>
+      ) : null}
     </div>
   );
 }

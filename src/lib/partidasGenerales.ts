@@ -41,6 +41,7 @@ export async function guardarAnalisis(
   eval_inicial: AnalisisGuardado["eval_inicial"],
   evals: AnalisisGuardado["evals"],
   mejores: (string | null)[],
+  segundas: AnalisisGuardado["segundas"],
 ): Promise<AnalisisGuardado> {
   const guardado = await api<AnalisisGuardado>("/analisis", {
     method: "POST",
@@ -57,6 +58,7 @@ export async function guardarAnalisis(
       eval_inicial,
       evals,
       mejores,
+      segundas,
     }),
   });
   marcarAnalizada(partida.plataforma, partida.id, guardado.precision);

@@ -133,6 +133,7 @@ export type AnalisisGuardado = {
   eval_inicial: EvaluacionGuardada;
   evals: EvaluacionGuardada[];
   mejores: (string | null)[];
+  segundas: (EvaluacionGuardada | null)[] | null;
   precision: number | null;
   imprecisiones: number;
   errores: number;
